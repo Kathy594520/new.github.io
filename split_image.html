@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖片分割工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="file"], input[type="number"], button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #preview {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>圖片分割工具</h1>
+    <div class="control-group">
+        <label for="imageInput">上傳圖片：</label>
+        <input type="file" id="imageInput" accept="image/*">
+    </div>
+    <div class="control-group">
+        <label for="rowsInput">分割行數（2-5）：</label>
+        <input type="number" id="rowsInput" min="2" max="5" value="2">
+    </div>
+    <div class="control-group">
+        <label for="colsInput">分割列數（2-5）：</label>
+        <input type="number" id="colsInput" min="2" max="5" value="2">
+    </div>
+    <button onclick="splitImage()">分割圖片</button>
+    <img id="preview" alt="圖片預覽">
+
+    <script>
+        let originalImage;
+
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                originalImage = new Image();
+                originalImage.onload = function() {
+                    document.getElementById('preview').src = this.src;
+                }
+                originalImage.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function splitImage() {
+            if (!originalImage) {
+                alert('請先上傳圖片');
+                return;
+            }
+
+            const rows = parseInt(document.getElementById('rowsInput').value);
+            const cols = parseInt(document.getElementById('colsInput').value);
+
+            if (rows < 2 || rows > 5 || cols < 2 || cols > 5) {
+                alert('行數和列數必須在2到5之間');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const zip = new JSZip();
+
+            const pieceWidth = originalImage.width / cols;
+            const pieceHeight = originalImage.height / rows;
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    canvas.width = pieceWidth;
+                    canvas.height = pieceHeight;
+                    ctx.drawImage(originalImage, j * pieceWidth, i * pieceHeight, pieceWidth, pieceHeight, 0, 0, pieceWidth, pieceHeight);
+                    
+                    const pieceDataUrl = canvas.toDataURL('image/png');
+                    const pieceData = atob(pieceDataUrl.split(',')[1]);
+                    const pieceArray = new Uint8Array(pieceData.length);
+                    for (let k = 0; k < pieceData.length; k++) {
+                        pieceArray[k] = pieceData.charCodeAt(k);
+                    }
+                    
+                    zip.file(`piece_${i+1}_${j+1}.png`, pieceArray);
+                }
+            }
+
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, "split_images.zip");
+            });
+        }
+    </script>
+</body>
+</html>
