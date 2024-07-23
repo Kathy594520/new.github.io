@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小貓咪追毛線球</title>
+    <style>
+        body {
+            background-color: #d3f3d3; /* 淺綠色背景 */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            border: 2px solid black;
+            background-color: #f0fff0; /* 更柔和的背景色 */
+            width: 80vw;
+            height: 60vh;
+        }
+        #controls, #controlButtons, #scoreBoard {
+            text-align: center;
+            margin-top: 10px;
+        }
+        #controls label, #scoreBoard, #controls select {
+            font-size: 1.5em; /* 放大文本和下拉選單 */
+        }
+        #controls button, #controlButtons button {
+            font-size: 1.5em; /* 放大按鈕字體大小 */
+            padding: 10px 20px; /* 放大按鈕內邊距 */
+            margin: 5px; /* 增加按鈕之間的間距 */
+            background-color: #ff69b4; /* 粉紅色背景 */
+            border: none; /* 去掉按鈕邊框 */
+            border-radius: 5px; /* 圓角邊框 */
+            color: white; /* 白色文字 */
+            font-weight: bold; /* 粗體字 */
+        }
+        #footer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>小貓咪追毛線球</h1>
+    <canvas id="gameCanvas"></canvas>
+    <div id="controls">
+        <label for="playerName">玩家名稱: </label>
+        <input type="text" id="playerName" style="font-size: 1.5em; padding: 5px;" />
+        <button onclick="startGame()">開始遊戲</button>
+        <button onclick="resetGame()">再玩一次</button>
+        <br><br>
+        <label for="speed">速度: </label>
+        <select id="speed">
+            <option value="1">慢</option>
+            <option value="2">中</option>
+            <option value="3">快</option>
+        </select>
+    </div>
+    <div id="controlButtons">
+        <button onclick="moveCatUp()">上</button>
+        <button onclick="moveCatDown()">下</button>
+        <button onclick="moveCatLeft()">左</button>
+        <button onclick="moveCatRight()">右</button>
+    </div>
+    <div id="scoreBoard">
+        <h2>分數: <span id="score">0</span></h2>
+    </div>
+    <audio id="bgMusic" loop>
+        <source src="background-music.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="meowSound">
+        <source src="meow.mp3" type="audio/mpeg">
+    </audio>
+    <div id="footer">仙姑凱西設計 v1</div>
+    <script src="game.js"></script>
+</body>
+</html>
