@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>表單 QR 碼生成器</title>
+    <title>批量 QR 碼生成器</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.6.0/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,8 +25,9 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
         }
-        #fileInput {
+        #fileInput, #nameInput {
             width: 100%;
             padding: 10px;
             margin-bottom: 20px;
@@ -67,20 +70,42 @@
         th {
             background-color: #f2f2f2;
         }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .footer img {
+            max-width: 100px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>表單 QR 碼生成器</h1>
+        <h1>批量 QR 碼生成器</h1>
         <input type="file" id="fileInput" accept=".xlsx, .xls">
-        <button onclick="processFile()">生成 QR 碼</button>
+        <input type="text" id="nameInput" placeholder="輸入QR碼名稱">
+        <button id="generateBtn">生成 QR 碼</button>
+        <button id="downloadBtn">下載 QR 碼</button>
         <div id="status"></div>
         <div id="result"></div>
     </div>
 
+    <div class="footer">
+        <p>仙姑凱西設計</p>
+        
+
+    </div>
+
     <script>
+        document.getElementById('generateBtn').addEventListener('click', processFile);
+        document.getElementById('downloadBtn').addEventListener('click', downloadZip);
+
+        let qrDataArray = [];
+        let fileName = "QR_Codes";
+
         function processFile() {
             const fileInput = document.getElementById('fileInput');
+            const nameInput = document.getElementById('nameInput').value.trim();
             const statusDiv = document.getElementById('status');
             const resultDiv = document.getElementById('result');
             
@@ -90,6 +115,7 @@
             }
 
             const file = fileInput.files[0];
+            fileName = file.name.split('.').slice(0, -1).join('.'); // Get file name without extension
             const reader = new FileReader();
 
             reader.onload = function(e) {
@@ -100,8 +126,10 @@
                 
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
                 
-                let tableHtml = '<table><tr><th>網址</th><th>QR 碼</th></tr>';
+                let tableHtml = '<table id="qrTable"><tr><th>網址</th><th>QR 碼</th></tr>';
                 
+                qrDataArray = []; // Reset array
+
                 for (let i = 0; i < jsonData.length; i++) {
                     if (jsonData[i][0] && typeof jsonData[i][0] === 'string' && jsonData[i][0].startsWith('http')) {
                         const url = jsonData[i][0];
@@ -109,7 +137,10 @@
                         qr.addData(url);
                         qr.make();
                         const qrImageData = qr.createDataURL(4);
-                        
+
+                        // Convert data URL to base64 string and save to array
+                        qrDataArray.push({url: url, imageData: qr.createDataURL(4), name: nameInput});
+
                         tableHtml += `<tr><td>${url}</td><td><img src="${qrImageData}" alt="QR Code"></td></tr>`;
                     }
                 }
@@ -121,6 +152,27 @@
             };
 
             reader.readAsArrayBuffer(file);
+        }
+
+        function downloadZip() {
+            if (qrDataArray.length === 0) {
+                alert('請先生成 QR 碼');
+                return;
+            }
+
+            const zip = new JSZip();
+            const imgFolder = zip.folder("QR_Codes");
+
+            qrDataArray.forEach((data, index) => {
+                const imgData = data.imageData.split(',')[1]; // Remove data URL prefix
+                const fileNamePrefix = data.name ? `${data.name}_` : '';
+                imgFolder.file(`${fileNamePrefix}QRCode_${index + 1}.jpg`, imgData, {base64: true});
+            });
+
+            zip.generateAsync({type:"blob"})
+                .then(function(content) {
+                    saveAs(content, `${fileName}.zip`);
+                });
         }
     </script>
 </body>
