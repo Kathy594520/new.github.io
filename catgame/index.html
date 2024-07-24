@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>小貓咪追毛線球</title>
     <style>
         body {
@@ -15,6 +15,7 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
+            touch-action: manipulation; /* 禁用雙擊縮放 */
         }
         #gameCanvas {
             border: 2px solid black;
@@ -38,6 +39,7 @@
             border-radius: 5px; /* 圓角邊框 */
             color: white; /* 白色文字 */
             font-weight: bold; /* 粗體字 */
+            user-select: none; /* 禁用文本選擇 */
         }
         #footer {
             text-align: center;
@@ -78,7 +80,7 @@
     <audio id="meowSound">
         <source src="meow.MP3" type="audio/mpeg">
     </audio>
-    <div id="footer">仙姑凱西設計 v1</div>
+    <div id="footer">仙姑凱西設計 v2</div>
     <script src="game.js"></script>
 </body>
 </html>
