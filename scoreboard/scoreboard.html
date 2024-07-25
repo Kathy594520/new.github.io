@@ -213,10 +213,18 @@
             '烏龜': '🐢'
         };
 
-        let teams = [
+        let teams = JSON.parse(localStorage.getItem('teams')) || [
             { name: '小組 1', score: 0, icon: '火箭', color: '#FF6B6B' },
             { name: '小組 2', score: 0, icon: '飛機', color: '#4ECDC4' }
         ];
+
+        let winningScore = parseInt(localStorage.getItem('winningScore')) || 10;
+        winningScoreInput.value = winningScore;
+
+        function saveState() {
+            localStorage.setItem('teams', JSON.stringify(teams));
+            localStorage.setItem('winningScore', winningScore);
+        }
 
         function updateScoreboard() {
             const winningScore = parseInt(winningScoreInput.value);
@@ -262,6 +270,7 @@
                 classicScoreboard.style.display = 'none';
                 raceTrack.style.display = 'flex';
             }
+            saveState();
         }
 
         function updateScore(teamIndex, change) {
@@ -331,6 +340,7 @@
                 team.icon = document.getElementById(`icon${index}`).value;
                 team.color = document.getElementById(`color${index}`).value;
             });
+            saveState();
             updateScoreboard();
         }
 
@@ -345,7 +355,11 @@
             updateScoreboard();
         }
 
-        winningScoreInput.addEventListener('change', updateScoreboard);
+        winningScoreInput.addEventListener('change', () => {
+            winningScore = parseInt(winningScoreInput.value);
+            saveState();
+            updateScoreboard();
+        });
 
         updateScoreboard();
     </script>
