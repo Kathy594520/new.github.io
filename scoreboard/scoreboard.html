@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>小組競賽計分板</title>
     <style>
         body {
@@ -23,7 +23,6 @@
             padding: 5px 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
-            touch-action: manipulation; /* 防止點擊時的放大效果 */
         }
         button {
             background-color: #4CAF50;
@@ -67,7 +66,7 @@
             height: 40px;
             font-size: 20px;
             margin: 0 5px;
-            touch-action: manipulation; /* 防止點擊時的放大效果 */
+            touch-action: manipulation;
         }
         #settingsModal {
             display: none;
@@ -193,6 +192,21 @@
     </div>
 
     <script>
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
         const classicScoreboard = document.getElementById('classicScoreboard');
         const raceTrack = document.getElementById('raceTrack');
         const scoreboardType = document.getElementById('scoreboardType');
@@ -221,15 +235,17 @@
         ];
 
         let winningScore = parseInt(localStorage.getItem('winningScore')) || 10;
+        let hasPlayedVictorySound = JSON.parse(localStorage.getItem('hasPlayedVictorySound')) || {};
+
         winningScoreInput.value = winningScore;
 
         function saveState() {
             localStorage.setItem('teams', JSON.stringify(teams));
             localStorage.setItem('winningScore', winningScore);
+            localStorage.setItem('hasPlayedVictorySound', JSON.stringify(hasPlayedVictorySound));
         }
 
         function updateScoreboard() {
-            const winningScore = parseInt(winningScoreInput.value);
             if (scoreboardType.value === 'classic') {
                 classicScoreboard.innerHTML = '';
                 teams.forEach((team, index) => {
@@ -279,16 +295,17 @@
             teams[teamIndex].score += change;
             if (teams[teamIndex].score < 0) teams[teamIndex].score = 0;
             updateScoreboard();
-            checkWinner();
+            checkWinner(teamIndex);
         }
 
-        function checkWinner() {
+        function checkWinner(teamIndex) {
             const winningScore = parseInt(winningScoreInput.value);
-            const winner = teams.find(team => team.score >= winningScore);
-            if (winner) {
-                alert(`${winner.name} 獲勝！`);
+            if (teams[teamIndex].score >= winningScore && !hasPlayedVictorySound[teamIndex]) {
+                alert(`${teams[teamIndex].name} 獲勝！`);
                 playVictorySound();
                 showConfetti();
+                hasPlayedVictorySound[teamIndex] = true;
+                saveState();
             } else {
                 playScoreSound();
             }
@@ -353,7 +370,11 @@
         }
 
         resetBtn.onclick = () => {
-            teams.forEach(team => team.score = 0);
+            teams.forEach(team => {
+                team.score = 0;
+                hasPlayedVictorySound = {};
+            });
+            saveState();
             updateScoreboard();
         }
 
