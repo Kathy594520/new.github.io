@@ -77,16 +77,19 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.4);
+            overflow-y: auto; /* 確保模態框可滾動 */
         }
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto;
+            margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
             width: 80%;
             max-width: 500px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-height: 90%; /* 調整模態框高度 */
+            overflow-y: auto; /* 允許模態框內部滾動 */
         }
         .close {
             color: #aaa;
@@ -187,7 +190,8 @@
                 <input type="number" id="winningScore" min="1" value="10">
             </div>
             <button id="addTeamBtn">新增小組</button>
-            <button id="resetBtn">重置遊戲</button>
+            <button id="resetBtn" style="background-color: #ef476f;">重置遊戲</button>
+            <button id="resetTeamsBtn" style="background-color: #00b4d8;">回復小組設定</button>
         </div>
     </div>
 
@@ -216,6 +220,7 @@
         const teamSettings = document.getElementById('teamSettings');
         const addTeamBtn = document.getElementById('addTeamBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const resetTeamsBtn = document.getElementById('resetTeamsBtn');
         const winningScoreInput = document.getElementById('winningScore');
 
         const icons = {
@@ -229,11 +234,12 @@
             '烏龜': '🐢'
         };
 
-        let teams = JSON.parse(localStorage.getItem('teams')) || [
+        const initialTeams = [
             { name: '小組 1', score: 0, icon: '火箭', color: '#FF6B6B' },
             { name: '小組 2', score: 0, icon: '飛機', color: '#4ECDC4' }
         ];
 
+        let teams = JSON.parse(localStorage.getItem('teams')) || initialTeams.slice();
         let winningScore = parseInt(localStorage.getItem('winningScore')) || 10;
         let hasPlayedVictorySound = JSON.parse(localStorage.getItem('hasPlayedVictorySound')) || {};
 
@@ -345,6 +351,13 @@
             setTimeout(() => confetti.remove(), 5000);
         }
 
+        function resetToInitialSettings() {
+            teams = initialTeams.slice();
+            hasPlayedVictorySound = {};
+            saveState();
+            updateScoreboard();
+        }
+
         scoreboardType.addEventListener('change', updateScoreboard);
 
         settingsBtn.onclick = () => {
@@ -376,6 +389,10 @@
             });
             saveState();
             updateScoreboard();
+        }
+
+        resetTeamsBtn.onclick = () => {
+            resetToInitialSettings();
         }
 
         winningScoreInput.addEventListener('change', () => {
