@@ -352,7 +352,12 @@
         }
 
         function resetToInitialSettings() {
-            teams = JSON.parse(JSON.stringify(initialTeams)); // 深度複製初始小組設置
+            teams = initialTeams.map(team => ({
+                name: team.name,
+                score: team.score,
+                icon: team.icon,
+                color: team.color
+            }));
             hasPlayedVictorySound = {};
             saveState();
             updateSettings(); // 更新設定視窗中的內容
@@ -373,18 +378,35 @@
         closeBtn.onclick = () => {
             settingsModal.style.display = 'none';
             teams.forEach((team, index) => {
-                team.name = document.getElementById(`team${index}`).value;
-                team.icon = document.getElementById(`icon${index}`).value;
-                team.color = document.getElementById(`color${index}`).value;
+                const teamNameInput = document.getElementById(`team${index}`);
+                const teamIconSelect = document.getElementById(`icon${index}`);
+                const teamColorInput = document.getElementById(`color${index}`);
+
+                if (teamNameInput && teamIconSelect && teamColorInput) {
+                    team.name = teamNameInput.value;
+                    team.icon = teamIconSelect.value;
+                    team.color = teamColorInput.value;
+                }
             });
             saveState();
             updateScoreboard();
         }
 
         addTeamBtn.onclick = () => {
-            teams.push({ name: `小組 ${teams.length + 1}`, score: 0, icon: '火箭', color: '#' + Math.floor(Math.random()*16777215).toString(16) });
-            updateSettings();
-            updateScoreboard();
+            const newTeam = { name: `小組 ${teams.length + 1}`, score: 0, icon: '火箭', color: '#' + Math.floor(Math.random()*16777215).toString(16) };
+            teams.push(newTeam);
+            // 在設置視窗中顯示新增的小組
+            const newRow = document.createElement('div');
+            newRow.className = 'settings-row';
+            newRow.innerHTML = `
+                <label for="team${teams.length - 1}">小組 ${teams.length} 名稱：</label>
+                <input type="text" id="team${teams.length - 1}" value="${newTeam.name}">
+                <select id="icon${teams.length - 1}">
+                    ${Object.keys(icons).map(icon => `<option value="${icon}" ${newTeam.icon === icon ? 'selected' : ''}>${icons[icon]} ${icon}</option>`).join('')}
+                </select>
+                <input type="color" id="color${teams.length - 1}" value="${newTeam.color}">
+            `;
+            teamSettings.appendChild(newRow);
         }
 
         resetBtn.onclick = () => {
