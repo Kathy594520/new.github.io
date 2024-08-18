@@ -31,7 +31,7 @@
         }
         .buttons {              
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-bottom: 20px;
         }
@@ -55,15 +55,14 @@
         .nav-buttons a {                    
             display: block;
             padding: 15px;
-            background-color: #1d4e89;                    
-            color: #fff;                    
+            color: #1d4e89; /* Keep the color to match the title */
             text-decoration: none;
             border-radius: 5px;
             text-align: center;
-            transition: background-color 0.3s;
+            transition: color 0.3s;
         }
         .nav-buttons a:hover {                    
-            background-color: #163a67;                    
+            color: #163a67;                    
         }
     </style>                    
 </head>                    
