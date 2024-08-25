@@ -1,18 +1,18 @@
-<html>
-<head>
+<html>                    
+<head>                    
     <base href="https://websimlabel.com/">
     <title>聯絡簿標籤產生器(A4文件合併列印)</title>
-    <style>
-        body {
+    <style>                    
+        body {                    
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f0f0f0;
+            background-color: #f0f0f0;                    
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
-        .container {
+        .container {                    
             display: flex;
             flex: 1;
             background-color: white;
@@ -20,28 +20,28 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-        .left-panel {
+        .left-panel {                    
             width: 25%;
             padding: 20px;
             box-sizing: border-box;
             overflow-y: auto;
         }
-        .right-panel {
+        .right-panel {                      
             width: 75%;
             padding: 20px;
             box-sizing: border-box;
-            background-color: #f9f9f9;
+            background-color: #f9f9f9;                      
             overflow-y: auto;
         }
-        h1 {
-            color: #333;
+        h1 {                      
+            color: #333;                
             text-align: center;
             margin-top: 0;
         }
         .settings, .template, .data-input, .font-selector, .image-input {
             margin-bottom: 20px;
         }
-        label {
+        label {                
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
@@ -53,14 +53,14 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
-        .actions {
+        .actions {  
             display: flex;
             justify-content: space-between;
             padding: 10px 20px;
-            background-color: #f0f0f0;
+            background-color: #f0f0f0;  
         }
-        button {
-            background-color: #4CAF50;
+        button {  
+            background-color: #4CAF50;  
             color: white;
             padding: 10px 15px;
             border: none;
@@ -68,14 +68,14 @@
             cursor: pointer;
             font-size: 16px;
         }
-        button:hover {
-            background-color: #45a049;
+        button:hover {  
+            background-color: #45a049;  
         }
-        .preview-container {
+        .preview-container {  
             overflow-y: auto;
             max-height: calc(100vh - 140px);
         }
-        .preview-page {
+        .preview-page {  
             width: 210mm;
             height: 297mm;
             border: 1px solid #000;
@@ -86,7 +86,7 @@
             page-break-after: always;
             position: relative;
         }
-        .label {
+        .label {  
             border: 1px dashed #ccc;
             padding: 5px;
             box-sizing: border-box;
@@ -99,7 +99,7 @@
             align-items: center;
             text-align: center;
         }
-        .draggable-text {
+        .draggable-text {                                            
             cursor: move;
             user-select: none;
             white-space: pre-wrap;
@@ -107,13 +107,14 @@
             max-width: 100%;
             z-index: 10;
             font-size: 12px;
-        }
-        img {
+            text-align: left; /* 將文字編排為靠左對齊 */
+}
+        img {                                            
             max-width: 100%;
             max-height: 100%;
             margin-bottom: 10px;
         }
-        @media print {
+        @media print {                  
             body * {
                 visibility: hidden;
             }
