@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>書籤生成工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        #preview {
+            width: 190mm;  /* 210mm - 20mm for margins */
+            min-height: 277mm;  /* 297mm - 20mm for margins */
+            margin: 10mm auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #imagePreview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #imagePreview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+        #labelInputs {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .bookmark {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .bookmark-image-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .bookmark img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .bookmark p {
+            margin: 5px 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            text-align: center;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #preview, #preview * {
+                visibility: visible;
+            }
+            #preview {
+                position: absolute;
+                left: 10mm;
+                top: 10mm;
+                width: 190mm;
+                height: 277mm;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+        #copyAllSection {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #copyAllTextarea {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>書籤生成工具</h1>
+
+        <div class="section">
+            <label for="imageUpload">上傳圖片（可多選）：</label>
+            <input type="file" id="imageUpload" accept="image/*" multiple>
+            <div id="imagePreview"></div>
+        </div>
+
+        <div class="section">
+            <label>設定行列數：</label>
+            <label for="rows">行：</label>
+            <input type="number" id="rows" min="1" value="3">
+            <label for="columns">列：</label>
+            <input type="number" id="columns" min="1" value="3">
+        </div>
+
+        <div class="section">
+            <label>邊框樣式：</label>
+            <select id="borderStyle">
+                <option value="none">無邊框</option>
+                <option value="solid">實線</option>
+                <option value="dashed">虛線</option>
+            </select>
+            <label for="borderColor">邊框顏色：</label>
+            <input type="color" id="borderColor" value="#000000">
+        </div>
+
+        <div class="section">
+            <button onclick="generateLabelInputs()">生成標籤輸入</button>
+            <div id="copyAllSection" style="display: none;">
+                <textarea id="copyAllTextarea" placeholder="輸入要複製到所有標籤的文字" rows="3"></textarea>
+                <button onclick="copyAllLabels()">複製到所有標籤</button>
+            </div>
+            <div id="labelInputs"></div>
+        </div>
+
+        <!-- 新增的步驟說明 -->
+        <div class="section">
+            <p>如果想要所有書籤使用相同的標籤，在 "輸入要複製到所有標籤的文字" 欄位中輸入文字，然後點擊 "複製到所有標籤" 按鈕。</p>
+        </div>
+
+        <div class="section">
+            <button onclick="generateBookmarks()">預覽書籤</button>
+            <button onclick="printBookmarks()">列印書籤</button>
+            <button onclick="downloadPDF()">下載 PDF</button>
+        </div>
+
+        <div class="section">
+            <h2>預覽</h2>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>此工具由 仙姑凱西 設計</p>
+    </footer>
+
+    <script>
+        let uploadedImages = [];
+
+        document.getElementById('imageUpload').addEventListener('change', function(event) {
+            const files = event.target.files;
+            uploadedImages = [];
+            const imagePreview = document.getElementById('imagePreview');
+            imagePreview.innerHTML = '';
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    uploadedImages.push(e.target.result);
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    imagePreview.appendChild(img);
+                }
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function generateLabelInputs() {
+            const rows = parseInt(document.getElementById('rows').value);
+            const columns = parseInt(document.getElementById('columns').value);
+            const labelInputs = document.getElementById('labelInputs');
+            labelInputs.innerHTML = '';
+
+            for (let i = 0; i < rows * columns; i++) {
+                const textarea = document.createElement('textarea');
+                textarea.placeholder = `書籤 ${i + 1} 標籤`;
+                textarea.id = `label-${i}`;
+                textarea.rows = 3;  // 設置每個標籤的行數
+                labelInputs.appendChild(textarea);
+            }
+
+            // 顯示複製全部的選項
+            document.getElementById('copyAllSection').style.display = 'flex';
+        }
+
+        function copyAllLabels() {
+            const copyAllTextarea = document.getElementById('copyAllTextarea');
+            const labelText = copyAllTextarea.value;
+            const rows = parseInt(document.getElementById('rows').value);
+            const columns = parseInt(document.getElementById('columns').value);
+
+            for (let i = 0; i < rows * columns; i++) {
+                const labelInput = document.getElementById(`label-${i}`);
+                if (labelInput) {
+                    labelInput.value = labelText;
+                }
+            }
+        }
+
+        function generateBookmarks() {
+            const preview = document.getElementById('preview');
+            const rows = parseInt(document.getElementById('rows').value);
+            const columns = parseInt(document.getElementById('columns').value);
+            const borderStyle = document.getElementById('borderStyle').value;
+            const borderColor = document.getElementById('borderColor').value;
+
+            preview.innerHTML = '';
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.height = '100%';
+            table.style.borderCollapse = 'collapse';
+
+            const cellWidth = 100 / columns;
+            const cellHeight = 100 / rows;
+
+            let bookmarkIndex = 0;
+            for (let i = 0; i < rows; i++) {
+                const row = table.insertRow();
+                for (let j = 0; j < columns; j++) {
+                    const cell = row.insertCell();
+                    cell.style.width = `${cellWidth}%`;
+                    cell.style.height = `${cellHeight}%`;
+                    cell.style.border = borderStyle === 'none' ? 'none' : `1px ${borderStyle} ${borderColor}`;
+                    cell.style.padding = '5px';
+                    cell.style.boxSizing = 'border-box';
+
+                    const bookmark = document.createElement('div');
+                    bookmark.className = 'bookmark';
+
+                    if (uploadedImages.length > 0) {
+                        const imageContainer = document.createElement('div');
+                        imageContainer.className = 'bookmark-image-container';
+                        const img = document.createElement('img');
+                        img.src = uploadedImages[bookmarkIndex % uploadedImages.length];
+                        imageContainer.appendChild(img);
+                        bookmark.appendChild(imageContainer);
+                    }
+
+                    const label = document.createElement('p');
+                    const labelInput = document.getElementById(`label-${bookmarkIndex}`);
+                    // 保留空白標籤
+                    label.innerHTML = labelInput && labelInput.value.trim() !== "" ? labelInput.value.replace(/\n/g, '<br>') : "";
+                    bookmark.appendChild(label);
+
+                    cell.appendChild(bookmark);
+                    bookmarkIndex++;
+                }
+            }
+
+            preview.appendChild(table);
+        }
+
+        function printBookmarks() {
+            window.print();
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const preview = document.getElementById('preview');
+
+            html2canvas(preview, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const margin = 10; // 10mm margin
+
+                pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - 2*margin, pdfHeight - 2*margin);
+                pdf.save('書籤.pdf');
+            });
+        }
+    </script>
+</body>
+</html>
