@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貼紙製作工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="number"] {
+            width: 60px;
+        }
+        #preview {
+            display: grid;
+            gap: 0;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .sticker {
+            box-sizing: border-box;
+            margin: 0;
+            text-align: center;
+            padding: 5px;
+        }
+        .sticker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>貼紙製作工具</h1>
+        
+        <!-- 圖片上傳區域 -->
+        <div class="section">
+            <label for="imageUpload">上傳圖片：</label>
+            <input type="file" id="imageUpload" accept="image/*" multiple>
+        </div>
+
+        <!-- 設定行列數 -->
+        <div class="section">
+            <label>設定行列數：</label>
+            行：<input type="number" id="rows" min="1" value="3">
+            列：<input type="number" id="cols" min="1" value="3">
+        </div>
+
+        <!-- 邊框樣式選項 -->
+        <div class="section">
+            <label for="borderStyle">邊框樣式：</label>
+            <select id="borderStyle">
+                <option value="none">無邊框</option>
+                <option value="solid">實線</option>
+                <option value="dashed">虛線</option>
+            </select>
+            <label for="borderColor">邊框顏色：</label>
+            <input type="color" id="borderColor" value="#000000">
+        </div>
+
+        <!-- 功能按鈕 -->
+        <div class="section">
+            <button id="downloadPDF">下載PDF</button>
+            <button id="printStickers">列印貼紙</button>
+        </div>
+
+        <!-- 預覽區域 -->
+        <div class="section">
+            <h2>預覽</h2>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <!-- jsPDF庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        const imageUpload = document.getElementById('imageUpload');
+        const rowsInput = document.getElementById('rows');
+        const colsInput = document.getElementById('cols');
+        const borderStyle = document.getElementById('borderStyle');
+        const borderColor = document.getElementById('borderColor');
+        const preview = document.getElementById('preview');
+        const downloadPDFBtn = document.getElementById('downloadPDF');
+        const printStickersBtn = document.getElementById('printStickers');
+
+        let images = [];
+
+        // 處理圖片上傳
+        imageUpload.addEventListener('change', (e) => {
+            const files = e.target.files;
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    images.push(event.target.result);
+                    renderPreview();
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 渲染預覽
+        function renderPreview() {
+            const rows = parseInt(rowsInput.value) || 1;
+            const cols = parseInt(colsInput.value) || 1;
+            preview.innerHTML = '';
+            
+            const border = `${borderStyle.value} 2px ${borderColor.value}`;
+
+            // 預留上下左右的邊距（例如每邊10mm）
+            const margin = 10; // mm
+            const stickerWidth = Math.floor((210 - margin * 2) / cols);  // A4寬度210mm
+            const stickerHeight = Math.floor((297 - margin * 2) / rows); // A4高度297mm
+
+            preview.style.gridTemplateColumns = `repeat(${cols}, ${stickerWidth}mm)`;
+            preview.style.gridTemplateRows = `repeat(${rows}, ${stickerHeight}mm)`;
+
+            for (let i = 0; i < images.length; i++) {
+                const sticker = document.createElement('div');
+                sticker.className = 'sticker';
+                sticker.style.border = border;
+                sticker.style.width = `${stickerWidth}mm`;
+                sticker.style.height = `${stickerHeight}mm`;
+                
+                if (images[i]) {
+                    const img = document.createElement('img');
+                    img.src = images[i];
+                    sticker.appendChild(img);
+                }
+
+                preview.appendChild(sticker);
+            }
+        }
+
+        // 生成PDF
+        downloadPDFBtn.addEventListener('click', () => {
+            const rows = parseInt(rowsInput.value) || 1;
+            const cols = parseInt(colsInput.value) || 1;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10; // 預留左右上下邊距10mm
+            const stickerWidth = Math.floor((pageWidth - margin * 2) / cols);
+            const stickerHeight = Math.floor((pageHeight - margin * 2) / rows);
+
+            let x = margin;
+            let y = margin;
+            let count = 0;
+
+            for (let i = 0; i < images.length; i++) {
+                if (count === rows * cols) {
+                    pdf.addPage();
+                    x = margin;
+                    y = margin;
+                    count = 0;
+                }
+
+                // 根據選擇的邊框樣式來繪製不同的邊框
+                if (borderStyle.value === 'solid') {
+                    pdf.setLineWidth(0.5); // 邊框線的厚度
+                    pdf.setDrawColor(borderColor.value); // 使用者選擇的邊框顏色
+                    pdf.rect(x, y, stickerWidth, stickerHeight); // 畫出矩形作為邊框
+                } else if (borderStyle.value === 'dashed') {
+                    // 模擬虛線邊框
+                    pdf.setLineWidth(0.5);
+                    pdf.setDrawColor(borderColor.value);
+
+                    const dashLength = 2; // 每段虛線的長度
+                    const gapLength = 2;  // 虛線之間的間距
+
+                    // 繪製虛線邊框（上邊）
+                    for (let dashX = x; dashX < x + stickerWidth; dashX += dashLength + gapLength) {
+                        pdf.line(dashX, y, Math.min(dashX + dashLength, x + stickerWidth), y);
+                    }
+                    // 繪製虛線邊框（下邊）
+                    for (let dashX = x; dashX < x + stickerWidth; dashX += dashLength + gapLength) {
+                        pdf.line(dashX, y + stickerHeight, Math.min(dashX + dashLength, x + stickerWidth), y + stickerHeight);
+                    }
+                    // 繪製虛線邊框（左邊）
+                    for (let dashY = y; dashY < y + stickerHeight; dashY += dashLength + gapLength) {
+                        pdf.line(x, dashY, x, Math.min(dashY + dashLength, y + stickerHeight));
+                    }
+                    // 繪製虛線邊框（右邊）
+                    for (let dashY = y; dashY < y + stickerHeight; dashY += dashLength + gapLength) {
+                        pdf.line(x + stickerWidth, dashY, x + stickerWidth, Math.min(dashY + dashLength, y + stickerHeight));
+                    }
+                }
+
+                // 然後添加圖片
+                pdf.addImage(images[i], 'JPEG', x + 1, y + 1, stickerWidth - 2, stickerHeight - 2); // 留出1mm作為內邊距
+
+                x += stickerWidth;
+                count++;
+
+                if (x + stickerWidth > pageWidth - margin + 0.1) {
+                    x = margin;
+                    y += stickerHeight;
+                }
+            }
+
+            pdf.save('stickers_with_borders.pdf');
+        });
+
+        // 列印貼紙
+        printStickersBtn.addEventListener('click', () => {
+            const printWindow = window.open('', '', 'width=800,height=600');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>列印貼紙</title>
+                    <style>
+                        @page { size: A4; margin: 10mm; }
+                        body { font-family: Arial, sans-serif; }
+                        .sticker {
+                            box-sizing: border-box;
+                            border: ${borderStyle.value} 2px ${borderColor.value};
+                            display: inline-block;
+                            width: ${(210 - 20) / colsInput.value}mm;
+                            height: ${(297 - 20) / rowsInput.value}mm;
+                            margin: 0;
+                            text-align: center;
+                            padding: 5px;
+                        }
+                        .sticker img {
+                            max-width: 100%;
+                            max-height: 100%;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${images.map(img => `
+                        <div class="sticker">
+                            <img src="${img}" alt="Sticker">
+                        </div>
+                    `).join('')}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        });
+
+        // 實時更新預覽
+        rowsInput.addEventListener('input', renderPreview);
+        colsInput.addEventListener('input', renderPreview);
+        borderStyle.addEventListener('change', renderPreview);
+        borderColor.addEventListener('input', renderPreview);
+    </script>
+</body>
+</html>
+ 
+此工具由 仙姑凱西設計
