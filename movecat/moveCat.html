@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>循跡移動小石虎遊戲</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #e0f7e9;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .instructions {
+            font-size: 2vw;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .score {
+            font-size: 2vw;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        button {
+            margin: 5px;
+            padding: 15px;
+            font-size: 2vw;
+            font-weight: bold;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        #clearPath { background-color: #ffcccc; }
+        #startMove { background-color: #ff99cc; }
+        #reset { background-color: #80d4ff; }
+        #toggleMusic { background-color: #cce6ff; }
+
+        canvas {
+            border: 1px solid black;
+            width: 90%;
+            height: auto;
+        }
+
+        .credits {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.5vw;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        玩家可以用手指（或滑鼠）從石虎的起點畫出軌道，石虎自動沿軌跡平滑移動。
+    </div>
+
+    <div class="score">分數：<span id="score">0</span></div>
+
+    <canvas id="gameCanvas"></canvas>
+    <div class="controls">
+        <button id="clearPath">清除線條</button>
+        <button id="startMove">開始移動</button>
+        <button id="reset">重置遊戲</button>
+        <button id="toggleMusic">播放/暫停音樂</button>
+    </div>
+
+    <div class="credits">
+        石虎圖片引用[窩抱報] 遊戲設計 凱西仙姑 僅應用於教育
+    </div>
+
+    <audio id="drawEndSound" src="draw_end.mp3"></audio>
+    <audio id="pointSound" src="point.mp3"></audio>
+    <audio id="goalSound" src="goal.mp3"></audio>
+    <audio id="backgroundMusic" src="background-music.MP3" loop></audio>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startMoveButton = document.getElementById('startMove');
+        const resetButton = document.getElementById('reset');
+        const clearPathButton = document.getElementById('clearPath');
+        const toggleMusicButton = document.getElementById('toggleMusic');
+
+        const drawEndSound = document.getElementById('drawEndSound');
+        const pointSound = document.getElementById('pointSound');
+        const goalSound = document.getElementById('goalSound');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+
+        const tigerImg = new Image();
+        tigerImg.src = 'car.png';  // 石虎圖片
+
+        const flowerImg = new Image();
+        flowerImg.src = 'flower.png';  // 花朵 (1 分)
+
+        const flower2Img = new Image();
+        flower2Img.src = 'flower2.png';  // 花朵 (2 分)
+
+        let tiger = { x: 50, y: 50, angle: 0 };
+        let path = [];
+        let drawing = false;
+        let drawTimer = null;
+        let flowers = [];
+        let score = 0;
+        let isDrawingAllowed = true;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerHeight * 0.6;
+            drawTiger();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        tigerImg.onload = drawTiger;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!isDrawingAllowed) return;
+
+            drawing = true;
+            path = [{ x: tiger.x, y: tiger.y }];
+            startDrawTimer();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!drawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            path.push({ x, y });
+            drawPath();
+        });
+
+        canvas.addEventListener('mouseup', stopDrawing);
+
+        function startDrawTimer() {
+            drawTimer = setTimeout(() => {
+                stopDrawing();
+                drawEndSound.play();
+            }, 5000);  // 設為 5 秒
+        }
+
+        function stopDrawing() {
+            if (drawing) {
+                drawing = false;
+                clearTimeout(drawTimer);
+                isDrawingAllowed = false;
+            }
+        }
+
+        function drawTiger() {
+            ctx.save();
+            ctx.translate(tiger.x, tiger.y);
+            ctx.rotate(tiger.angle);
+            ctx.drawImage(tigerImg, -75, -37.5, 150, 75);
+            ctx.restore();
+        }
+
+        function drawPath() {
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+            path.forEach((point, index) => {
+                if (index === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+        }
+
+        function generateFlowers() {
+            flowers = Array.from({ length: 10 }, () => ({
+                x: Math.random() * (canvas.width - 75),
+                y: Math.random() * (canvas.height - 75),
+                size: 75,
+                type: Math.random() < 0.5 ? 'flower' : 'flower2',
+            }));
+        }
+
+        function drawFlowers() {
+            flowers.forEach(flower => {
+                const img = flower.type === 'flower' ? flowerImg : flower2Img;
+                ctx.drawImage(img, flower.x, flower.y, flower.size, flower.size);
+            });
+        }
+
+        function moveTiger() {
+            let i = 0;
+            function animate() {
+                if (i >= path.length) {
+                    goalSound.play();
+                    return;
+                }
+
+                const { x, y } = path[i];
+                const dx = x - tiger.x;
+                const dy = y - tiger.y;
+                const dist = Math.hypot(dx, dy);
+
+                tiger.angle = Math.atan2(dy, dx);
+
+                if (dist < 3) {
+                    i++;
+                } else {
+                    tiger.x += (dx / dist) * 4;
+                    tiger.y += (dy / dist) * 4;
+                }
+
+                flowers.forEach((flower, index) => {
+                    if (Math.hypot(tiger.x - flower.x, tiger.y - flower.y) < flower.size / 2) {
+                        score += flower.type === 'flower' ? 1 : 2;
+                        pointSound.play();
+                        flowers.splice(index, 1);
+                        scoreDisplay.textContent = score;
+                    }
+                });
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawFlowers();
+                drawPath();
+                drawTiger();
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        startMoveButton.addEventListener('click', () => {
+            generateFlowers();
+            moveTiger();
+        });
+
+        resetButton.addEventListener('click', () => {
+            tiger = { x: 50, y: 50, angle: 0 };
+            path = [];
+            flowers = [];
+            score = 0;
+            isDrawingAllowed = true;
+            scoreDisplay.textContent = score;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTiger();
+        });
+
+        clearPathButton.addEventListener('click', () => {
+            path = [];
+            isDrawingAllowed = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTiger();
+        });
+
+        toggleMusicButton.addEventListener('click', () => {
+            if (backgroundMusic.paused) {
+                backgroundMusic.play();
+            } else {
+                backgroundMusic.pause();
+            }
+        });
+    </script>
+</body>
+</html>
+
