@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>配色練習遊戲</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .wheel-wrap{width:260px;height:260px;display:flex;align-items:center;justify-content:center}
+    svg{max-width:100%;height:auto}
+    .segment{transition:stroke-width .18s, filter .18s; cursor:default}
+    .segment.highlight{stroke:#111;stroke-width:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))}
+    .segment.neighbor{stroke:#111;stroke-width:3;opacity:0.95}
+    .segment.complement{stroke:#fff;stroke-width:4;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.25))}
+    .wheel-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+    .legend-item{display:flex;gap:6px;align-items:center;font-size:12px}
+    .legend-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,0.08)}
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-yellow-50 to-pink-50 p-6">
+  <h1 class="text-2xl font-bold mb-4">🎨 配色練習遊戲</h1>
+  <p class="mb-6 text-gray-600">選擇正確的顏色組合：鄰近色、互補色或同類色（右側色環會同步顯示）</p>
+
+  <div class="flex flex-col md:flex-row gap-8">
+    <!-- 遊戲區 -->
+    <div>
+      <div id="gameArea" class="grid grid-cols-3 gap-4 mb-6"></div>
+      <p id="instruction" class="text-lg font-semibold text-blue-700 mb-2"></p>
+      <p id="feedback" class="text-md font-bold mb-2"></p>
+      <p id="score" class="text-md font-semibold text-purple-700 mb-2">分數：0</p>
+      <p id="timer" class="text-md font-semibold text-red-600 mb-2">剩餘時間：60 秒</p>
+
+      <div class="flex gap-3">
+        <button onclick="newRound()" class="px-4 py-2 bg-blue-500 text-white rounded-xl shadow hover:bg-blue-600">下一題</button>
+        <button onclick="toggleLabels()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-xl shadow">切換色名標示</button>
+      </div>
+    </div>
+
+    <!-- 伊登色環參考圖 -->
+    <div class="flex flex-col items-center">
+      <h2 class="text-lg font-semibold mb-2">🎡 伊登色環（參考）</h2>
+      <div class="wheel-wrap" id="wheelWrap">
+        <svg id="colorWheel" viewBox="0 0 260 260" width="260" height="260" aria-label="色環示意"></svg>
+      </div>
+      <div class="wheel-legend" id="wheelLegend"></div>
+      <p class="text-sm text-gray-600 mt-2">會根據題目自動高亮主色、鄰近色與互補色</p>
+    </div>
+  </div>
+
+  <script>
+    const colors = [
+      "#FF0000","#FF7F00","#FFFF00","#7FFF00","#00FF00","#00FF7F",
+      "#00FFFF","#007FFF","#0000FF","#7F00FF","#FF00FF","#FF007F"
+    ];
+    const colorNames = [
+      "紅色 (Red)","橙色 (Orange)","黃色 (Yellow)","黃綠色 (Yellow-Green)",
+      "綠色 (Green)","藍綠色 (Blue-Green)","青色 (Cyan)","藍色 (Blue)",
+      "靛色 (Indigo)","紫色 (Violet)","洋紅色 (Magenta)","玫紅色 (Rose)"
+    ];
+    const modes = ["鄰近色","互補色","同類色"];
+
+    let currentColor = "";
+    let currentMode = "";
+    let labelsOn = false;
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval;
+
+    function startTimer(){
+      clearInterval(timerInterval);
+      timerInterval = setInterval(()=>{
+        timeLeft--;
+        document.getElementById("timer").textContent = `剩餘時間：${timeLeft} 秒`;
+        if(timeLeft<=0){
+          clearInterval(timerInterval);
+          alert(`時間到！總分：${score}`);
+          score = 0;
+          timeLeft = 60;
+          document.getElementById("score").textContent = "分數：0";
+          document.getElementById("timer").textContent = "剩餘時間：60 秒";
+        }
+      },1000);
+    }
+
+    function drawColorWheel(){
+      const svg = document.getElementById('colorWheel');
+      svg.innerHTML = '';
+      const cx = 130, cy = 130, r = 110;
+      const segCount = colors.length;
+
+      for(let i=0;i<segCount;i++){
+        const startAngle = (i/segCount)*360;
+        const endAngle = ((i+1)/segCount)*360;
+        const largeArc = (endAngle - startAngle) > 180 ? 1:0;
+        const rad1 = (startAngle-90) * Math.PI/180;
+        const rad2 = (endAngle-90) * Math.PI/180;
+        const x1 = cx + r*Math.cos(rad1);
+        const y1 = cy + r*Math.sin(rad1);
+        const x2 = cx + r*Math.cos(rad2);
+        const y2 = cy + r*Math.sin(rad2);
+
+        const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', colors[i]);
+        path.setAttribute('data-index', i);
+        path.setAttribute('class', 'segment');
+        svg.appendChild(path);
+
+        const midAngle = ((startAngle+endAngle)/2 - 90) * Math.PI/180;
+        const mx = cx + (r*0.7) * Math.cos(midAngle);
+        const my = cy + (r*0.7) * Math.sin(midAngle);
+        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        txt.setAttribute('x', mx);
+        txt.setAttribute('y', my+4);
+        txt.setAttribute('text-anchor','middle');
+        txt.setAttribute('font-size','8');
+        txt.setAttribute('fill','#111');
+        txt.setAttribute('visibility', labelsOn ? 'visible' : 'hidden');
+        txt.textContent = i+1;
+        svg.appendChild(txt);
+      }
+
+      const center = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      center.setAttribute('cx', cx);
+      center.setAttribute('cy', cy);
+      center.setAttribute('r', 20);
+      center.setAttribute('fill', 'rgba(255,255,255,0.9)');
+      center.setAttribute('stroke','#ddd');
+      svg.appendChild(center);
+
+      const legend = document.getElementById('wheelLegend');
+      legend.innerHTML = '';
+      for(let i=0;i<colors.length;i++){
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `<span class='legend-swatch' style='background:${colors[i]}'></span><span>${colorNames[i]}<br>${colors[i]}</span>`;
+        legend.appendChild(item);
+      }
+    }
+
+    function highlightSegments(){
+      const svg = document.getElementById('colorWheel');
+      const segs = svg.querySelectorAll('path.segment');
+      segs.forEach(s=>{ s.classList.remove('highlight','neighbor','complement'); s.setAttribute('stroke','transparent'); s.setAttribute('stroke-width','0'); });
+      const idx = colors.indexOf(currentColor);
+      if(idx<0) return;
+
+      if(currentMode === '鄰近色'){
+        const n1 = (idx+1)%colors.length;
+        const n2 = (idx-1+colors.length)%colors.length;
+        segs[idx].classList.add('highlight');
+        segs[n1].classList.add('neighbor');
+        segs[n2].classList.add('neighbor');
+      } else if(currentMode === '互補色'){
+        const comp = (idx + colors.length/2) % colors.length;
+        segs[idx].classList.add('highlight');
+        segs[comp].classList.add('complement');
+      } else if(currentMode === '同類色'){
+        segs[idx].classList.add('highlight');
+      }
+    }
+
+    function toggleLabels(){ labelsOn = !labelsOn; highlightSegments(); }
+
+    function newRound(){
+      document.getElementById('feedback').textContent = '';
+      currentColor = colors[Math.floor(Math.random()*colors.length)];
+      currentMode = modes[Math.floor(Math.random()*modes.length)];
+      document.getElementById('instruction').textContent = `請找出「${colorNames[colors.indexOf(currentColor)]}」的 ${currentMode}`;
+      const gameArea = document.getElementById('gameArea');
+      gameArea.innerHTML = '';
+      colors.forEach((c,i) => {
+        const div = document.createElement('div');
+        div.className = 'w-20 h-20 rounded-full cursor-pointer border-2 flex flex-col items-center justify-center text-xs font-mono';
+        div.style.backgroundColor = c;
+        div.style.color = '#000';
+        div.innerHTML = `<span>${colorNames[i].split(' ')[0]}</span><span>${c}</span>`;
+        div.onclick = () => checkAnswer(c);
+        gameArea.appendChild(div);
+      });
+
+      drawColorWheel();
+      setTimeout(highlightSegments, 50);
+      startTimer();
+    }
+
+    function checkAnswer(choice){
+      let correct = false;
+      const idx = colors.indexOf(currentColor);
+      if(currentMode === '鄰近色'){
+        correct = choice === colors[(idx+1)%colors.length] || choice === colors[(idx-1+colors.length)%colors.length];
+      } else if(currentMode === '互補色'){
+        correct = choice === colors[(idx+6)%colors.length];
+      } else if(currentMode === '同類色'){
+        correct = choice === currentColor;
+      }
+
+      if(correct){
+        score += 10;
+        document.getElementById('feedback').textContent = '✅ 正確！';
+        document.getElementById('feedback').className = 'text-green-600';
+      } else {
+        score -= 5;
+        document.getElementById('feedback').textContent = '❌ 再試試看';
+        document.getElementById('feedback').className = 'text-red-600';
+      }
+      document.getElementById('score').textContent = `分數：${score}`;
+    }
+
+    drawColorWheel();
+    newRound();
+  </script>
+</body>
+</html>
