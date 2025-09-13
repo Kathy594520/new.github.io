@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 黏土混色遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #FFE5B4, #FFCCCB, #E0E6FF);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-opacity='0.1'%3E%3Ctext x='10' y='30' font-size='20' fill='%23FF6B6B'%3E🎨%3C/text%3E%3Ctext x='70' y='20' font-size='15' fill='%234ECDC4'%3E🌈%3C/text%3E%3Ctext x='20' y='70' font-size='18' fill='%23FFE66D'%3E✨%3C/text%3E%3Ctext x='80' y='80' font-size='16' fill='%23FF6B6B'%3E🎭%3C/text%3E%3Ctext x='50' y='50' font-size='14' fill='%234ECDC4'%3E🖌️%3C/text%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: repeat;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .start-screen, .end-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 3rem;
+            color: #FF6B6B;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0px #FFE66D;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+
+
+        .start-btn, .restart-btn {
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .start-btn:hover, .restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+        }
+
+        .game-screen {
+            display: none;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            height: 100vh;
+            padding: 20px 0;
+        }
+
+        .color-selection {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-selection::after {
+            content: '🎨';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 20px;
+            opacity: 0.15;
+            animation: spin 8s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .color-balls {
+            display: grid;
+            gap: 15px;
+            justify-items: center;
+        }
+
+        .color-balls.children {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .color-balls.advanced {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .color-ball {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            border: 4px solid white;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .color-ball:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .color-ball:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .mixing-area {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mixing-area::before {
+            content: '🎨✨🌈🎭🖌️';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 12px;
+            opacity: 0.2;
+            letter-spacing: 5px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        .target-color {
+            text-align: center;
+        }
+
+        .target-display {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            margin: 10px auto;
+            border: 5px solid #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .color-info {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .mixing-zone {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .drop-zone {
+            width: 100px;
+            height: 100px;
+            border: 3px dashed #ccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.5);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #4ECDC4;
+            background: rgba(78, 205, 196, 0.2);
+            transform: scale(1.1);
+        }
+
+        .plus-sign {
+            font-size: 2rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .result-display {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            border: 5px solid #333;
+            background: #f0f0f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .check-btn {
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .check-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+
+        .info-panel {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-panel::before {
+            content: '⭐🎮🏆';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            opacity: 0.1;
+            animation: twinkle 4s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.1); }
+        }
+
+        .info-item {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .info-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .timer {
+            color: #FF6B6B;
+        }
+
+        .score {
+            color: #4ECDC4;
+        }
+
+        .level {
+            color: #FFE66D;
+        }
+
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 20px 40px;
+            border-radius: 20px;
+            z-index: 1000;
+            animation: feedbackPop 1s ease-out;
+        }
+
+        .feedback.correct {
+            background: #4ECDC4;
+            color: white;
+        }
+
+        .feedback.incorrect {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        @keyframes feedbackPop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .back-btn:hover {
+            background: #555;
+        }
+
+        .final-stats {
+            background: rgba(255,255,255,0.9);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .color-theory-tips {
+            background: rgba(255, 248, 220, 0.9);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 2px solid rgba(255, 230, 109, 0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: tipGlow 3s ease-in-out infinite alternate;
+        }
+
+        .tip-toggle-btn {
+            background: rgba(255, 230, 109, 0.3);
+            border: 2px solid rgba(255, 230, 109, 0.5);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tip-toggle-btn:hover {
+            background: rgba(255, 230, 109, 0.5);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .tip-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tip-content.hidden {
+            display: none;
+        }
+
+        @keyframes tipGlow {
+            0% { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+            100% { box-shadow: 0 4px 20px rgba(255, 230, 109, 0.3); }
+        }
+
+        .tip-content {
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .game-screen {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 15px;
+            }
+            
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            .color-ball {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .target-display, .result-display {
+                width: 100px;
+                height: 100px;
+            }
+
+            .color-theory-tips {
+                margin-top: 15px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 開始畫面 -->
+        <div class="start-screen" id="startScreen">
+            <h1 class="game-title">🎨 黏土混色遊戲</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 30px; color: #666;">混合顏色，創造目標色彩！適合所有年齡的有趣體驗</p>
+            <button class="start-btn" onclick="startGame()">🎮 遊戲開始</button>
+        </div>
+
+        <!-- 遊戲畫面 -->
+        <div class="game-screen" id="gameScreen">
+            <!-- 左側：顏色選擇區 -->
+            <div class="color-selection">
+                <h3 class="section-title">🎨 顏色小球</h3>
+                <div class="color-balls" id="colorBalls"></div>
+            </div>
+
+            <!-- 中間：混色操作區 -->
+            <div class="mixing-area">
+                <div class="target-color">
+                    <h3>🎯 目標顏色</h3>
+                    <div class="target-display" id="targetDisplay"></div>
+                    <div class="color-info" id="colorInfo"></div>
+                    <div class="hint-display" id="hintDisplay" style="display: none; margin-top: 10px; padding: 10px; background: rgba(255, 235, 59, 0.2); border-radius: 10px; font-size: 0.9rem; color: #666;">
+                        💡 提示：試試看這些顏色組合！
+                    </div>
+                </div>
+
+                <div class="mixing-zone">
+                    <div class="drop-zone" id="dropZone1">
+                        <span class="plus-sign">+</span>
+                    </div>
+                    <div class="plus-sign">➕</div>
+                    <div class="drop-zone" id="dropZone2">
+                        <span class="plus-sign">+</span>
+                    </div>
+                    <div class="drop-zone" id="dropZone3" style="display: none;">
+                        <span class="plus-sign">+</span>
+                    </div>
+                    <div class="plus-sign" id="thirdPlus" style="display: none;">➕</div>
+                    <div class="plus-sign">=</div>
+                    <div class="result-display" id="resultDisplay"></div>
+                </div>
+
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button class="check-btn" onclick="checkAnswer()">🌈 檢查答案</button>
+                    <button class="check-btn" onclick="clearColors()" style="background: linear-gradient(45deg, #FF6B6B, #FFA500);">🗑️ 清除顏色</button>
+                </div>
+            </div>
+
+            <!-- 右側：挑戰資訊區 -->
+            <div class="info-panel">
+                <div class="info-item">
+                    <div>⏳ 時間</div>
+                    <div class="info-value timer" id="timer">60</div>
+                </div>
+                <div class="info-item">
+                    <div>⭐ 分數</div>
+                    <div class="info-value score" id="score">0</div>
+                </div>
+                <div class="info-item">
+                    <div>🎮 關卡</div>
+                    <div class="info-value level" id="level">1</div>
+                </div>
+                <div class="info-item">
+                    <div>🎯 進度</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div style="margin-top: 5px; font-size: 0.9rem;" id="progressText">0/3</div>
+                </div>
+                
+                <!-- 色彩學提示區 -->
+                <div class="color-theory-tips" id="colorTheoryTips">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: #333; margin: 0; font-size: 1rem;">🎨 色彩小知識</h4>
+                        <button class="tip-toggle-btn" id="tipToggleBtn" onclick="toggleColorTips()">
+                            <span id="tipToggleIcon">👁️</span>
+                        </button>
+                    </div>
+                    <div class="tip-content" id="tipContent">
+                        <div style="font-size: 0.85rem; color: #666; line-height: 1.4; text-align: center;">
+                            💡 紅色 + 黃色 = 橘色<br>
+                            🌈 這是暖色系的經典組合！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 結束畫面 -->
+        <div class="end-screen" id="endScreen" style="display: none;">
+            <h1 class="game-title">🎉 遊戲結束！</h1>
+            <p style="font-size: 1.5rem; margin-bottom: 20px; color: #666;" id="finalMessage"></p>
+            
+            <div class="final-stats" id="finalStats">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #333;">📊 遊戲統計</h3>
+                <div class="stat-item">
+                    <span>最終分數：</span>
+                    <span id="finalScore">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>正確答案：</span>
+                    <span id="finalCorrect">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>錯誤答案：</span>
+                    <span id="finalIncorrect">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>準確率：</span>
+                    <span id="finalAccuracy">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span>達到關卡：</span>
+                    <span id="finalLevel">1</span>
+                </div>
+            </div>
+            
+            <button class="restart-btn" onclick="restartGame()">🔄 再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            currentLevel: 1,
+            score: 0,
+            timer: 60,
+            correctAnswers: 0,
+            incorrectAnswers: 0,
+            targetColor: null,
+            selectedColors: [],
+            isGameActive: false,
+            timerInterval: null,
+            usedTargets: [],
+            usedTargetsByDifficulty: { easy: [], medium: [], hard: [] },
+            consecutiveWrong: 0,
+            currentDifficulty: 'easy',
+            showColorTips: true
+        };
+
+        const colorMixing = {
+            // 基礎顏色
+            red: { rgb: [255, 0, 0], hex: '#FF0000', hsl: [0, 100, 50] },
+            yellow: { rgb: [255, 255, 0], hex: '#FFFF00', hsl: [60, 100, 50] },
+            blue: { rgb: [0, 0, 255], hex: '#0000FF', hsl: [240, 100, 50] },
+            white: { rgb: [255, 255, 255], hex: '#FFFFFF', hsl: [0, 0, 100] },
+            black: { rgb: [0, 0, 0], hex: '#000000', hsl: [0, 0, 0] },
+            
+            // 進階版額外顏色
+            orange: { rgb: [255, 165, 0], hex: '#FFA500', hsl: [39, 100, 50] },
+            green: { rgb: [0, 128, 0], hex: '#008000', hsl: [120, 100, 25] },
+            purple: { rgb: [128, 0, 128], hex: '#800080', hsl: [300, 100, 25] },
+            pink: { rgb: [255, 192, 203], hex: '#FFC0CB', hsl: [350, 100, 88] },
+            brown: { rgb: [165, 42, 42], hex: '#A52A2A', hsl: [0, 59, 41] },
+            gray: { rgb: [128, 128, 128], hex: '#808080', hsl: [0, 0, 50] },
+            cyan: { rgb: [0, 255, 255], hex: '#00FFFF', hsl: [180, 100, 50] },
+            magenta: { rgb: [255, 0, 255], hex: '#FF00FF', hsl: [300, 100, 50] },
+            lime: { rgb: [50, 205, 50], hex: '#32CD32', hsl: [120, 61, 50] },
+            navy: { rgb: [0, 0, 128], hex: '#000080', hsl: [240, 100, 25] }
+        };
+
+        const colorTheoryTips = [
+            {
+                colors: ['red', 'yellow'],
+                tip: '💡 紅色 + 黃色 = 橘色<br>🌈 這是暖色系的經典組合！',
+                category: 'primary'
+            },
+            {
+                colors: ['blue', 'yellow'],
+                tip: '💡 藍色 + 黃色 = 綠色<br>🌿 冷暖色調的完美平衡！',
+                category: 'primary'
+            },
+            {
+                colors: ['red', 'blue'],
+                tip: '💡 紅色 + 藍色 = 紫色<br>👑 神秘高貴的皇室色彩！',
+                category: 'primary'
+            },
+            {
+                colors: ['red', 'white'],
+                tip: '💡 紅色 + 白色 = 粉紅色<br>🌸 溫柔浪漫的春天色調！',
+                category: 'tint'
+            },
+            {
+                colors: ['blue', 'white'],
+                tip: '💡 藍色 + 白色 = 淺藍色<br>☁️ 清新如天空的寧靜色彩！',
+                category: 'tint'
+            },
+            {
+                colors: ['red', 'black'],
+                tip: '💡 紅色 + 黑色 = 深紅色<br>🍷 成熟穩重的深沉美感！',
+                category: 'shade'
+            },
+            {
+                colors: ['blue', 'black'],
+                tip: '💡 藍色 + 黑色 = 深藍色<br>🌌 深邃如夜空的神秘色彩！',
+                category: 'shade'
+            },
+            {
+                colors: ['red', 'yellow', 'white'],
+                tip: '💡 三色混合創造淺橘色<br>🍑 溫暖柔和的桃子色調！',
+                category: 'complex'
+            },
+            {
+                colors: ['blue', 'red', 'white'],
+                tip: '💡 三色混合創造淺紫色<br>🦄 夢幻優雅的薰衣草色！',
+                category: 'complex'
+            },
+            {
+                colors: ['yellow', 'blue', 'white'],
+                tip: '💡 三色混合創造淺綠色<br>🌱 清新自然的嫩葉色彩！',
+                category: 'complex'
+            },
+            {
+                colors: ['yellow', 'red', 'green'],
+                tip: '💡 三色混合創造土黃色<br>🏜️ 大地色系的溫暖質感！',
+                category: 'complex'
+            }
+        ];
+
+        const gameConfig = {
+            title: '🎨 黏土混色遊戲',
+            description: '混合顏色，創造目標色彩！適合所有年齡的有趣體驗',
+            colors: ['red', 'yellow', 'blue', 'white', 'black', 'green'],
+            targets: {
+                easy: [
+                    { colors: ['red', 'yellow'], result: [255, 165, 0], name: '橘色', hex: '#FFA500', difficulty: 'easy' },
+                    { colors: ['blue', 'yellow'], result: [0, 128, 0], name: '綠色', hex: '#008000', difficulty: 'easy' },
+                    { colors: ['red', 'blue'], result: [128, 0, 128], name: '紫色', hex: '#800080', difficulty: 'easy' }
+                ],
+                medium: [
+                    { colors: ['red', 'white'], result: [255, 192, 203], name: '粉紅色', hex: '#FFC0CB', difficulty: 'medium' },
+                    { colors: ['blue', 'white'], result: [173, 216, 230], name: '淺藍色', hex: '#ADD8E6', difficulty: 'medium' },
+                    { colors: ['yellow', 'green'], result: [154, 205, 50], name: '橄欖色', hex: '#9ACD32', difficulty: 'medium' },
+                    { colors: ['red', 'black'], result: [139, 0, 0], name: '深紅色', hex: '#8B0000', difficulty: 'medium' },
+                    { colors: ['blue', 'black'], result: [0, 0, 139], name: '深藍色', hex: '#00008B', difficulty: 'medium' }
+                ],
+                hard: [
+                    // 三色混合題目 (第三關主要內容)
+                    { colors: ['red', 'yellow', 'white'], result: [255, 220, 177], name: '淺橘色', hex: '#FFDCB1', difficulty: 'hard' },
+                    { colors: ['blue', 'red', 'white'], result: [221, 160, 221], name: '淺紫色', hex: '#DDA0DD', difficulty: 'hard' },
+                    { colors: ['yellow', 'blue', 'white'], result: [170, 213, 170], name: '淺綠色', hex: '#AAD5AA', difficulty: 'hard' },
+                    { colors: ['red', 'yellow', 'black'], result: [170, 128, 0], name: '深橘色', hex: '#AA8000', difficulty: 'hard' },
+                    { colors: ['blue', 'red', 'black'], result: [85, 0, 85], name: '深紫色', hex: '#550055', difficulty: 'hard' },
+                    { colors: ['yellow', 'blue', 'black'], result: [85, 128, 85], name: '深綠色', hex: '#558055', difficulty: 'hard' },
+                    { colors: ['red', 'blue', 'green'], result: [128, 64, 128], name: '混合紫', hex: '#804080', difficulty: 'hard' },
+                    { colors: ['yellow', 'red', 'green'], result: [170, 128, 85], name: '土黃色', hex: '#AA8055', difficulty: 'hard' },
+                    { colors: ['blue', 'yellow', 'green'], result: [85, 170, 85], name: '青綠色', hex: '#55AA55', difficulty: 'hard' },
+                    { colors: ['red', 'green', 'black'], result: [128, 64, 0], name: '深棕色', hex: '#804000', difficulty: 'hard' },
+                    { colors: ['blue', 'green', 'white'], result: [128, 191, 191], name: '青白色', hex: '#80BFBF', difficulty: 'hard' },
+                    { colors: ['red', 'green', 'yellow'], result: [170, 128, 85], name: '橄欖棕', hex: '#AA8055', difficulty: 'hard' },
+                    { colors: ['blue', 'green', 'black'], result: [0, 85, 85], name: '深青色', hex: '#005555', difficulty: 'hard' },
+                    { colors: ['red', 'blue', 'yellow'], result: [170, 85, 170], name: '暖紫色', hex: '#AA55AA', difficulty: 'hard' },
+                    { colors: ['white', 'black', 'red'], result: [170, 85, 85], name: '灰紅色', hex: '#AA5555', difficulty: 'hard' },
+                    { colors: ['white', 'black', 'blue'], result: [85, 85, 170], name: '灰藍色', hex: '#5555AA', difficulty: 'hard' },
+                    { colors: ['white', 'black', 'yellow'], result: [170, 170, 85], name: '灰黃色', hex: '#AAAA55', difficulty: 'hard' },
+                    { colors: ['white', 'black', 'green'], result: [85, 128, 85], name: '灰綠色', hex: '#558055', difficulty: 'hard' },
+                    { colors: ['red', 'green', 'white'], result: [200, 160, 160], name: '淺棕色', hex: '#C8A0A0', difficulty: 'hard' },
+                    { colors: ['blue', 'red', 'green'], result: [85, 85, 128], name: '深灰紫', hex: '#555580', difficulty: 'hard' },
+                    
+                    // 少量雙色題目 (避免與前面關卡重複)
+                    { colors: ['yellow', 'black'], result: [128, 128, 0], name: '橄欖色', hex: '#808000', difficulty: 'hard' },
+                    { colors: ['green', 'white'], result: [144, 238, 144], name: '淺綠色', hex: '#90EE90', difficulty: 'hard' },
+                    { colors: ['green', 'black'], result: [0, 100, 0], name: '深綠色', hex: '#006400', difficulty: 'hard' }
+                ]
+            },
+            requirements: {
+                1: { score: 30, accuracy: 60 },
+                2: { score: 80, accuracy: 65 },
+                3: { score: 150, accuracy: 75, time: 120 }
+            }
+        };
+
+
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'grid';
+            gameState.isGameActive = true;
+            gameState.timer = 120;
+            setupColorBalls();
+            generateNewTarget();
+            startTimer();
+            setupDragAndDrop();
+            updateDisplay();
+        }
+
+        function setupColorBalls() {
+            const colorBallsContainer = document.getElementById('colorBalls');
+            colorBallsContainer.innerHTML = '';
+            colorBallsContainer.className = 'color-balls children';
+            
+            gameConfig.colors.forEach(colorName => {
+                const colorData = colorMixing[colorName];
+                const ball = document.createElement('div');
+                ball.className = 'color-ball';
+                ball.style.background = `rgb(${colorData.rgb.join(',')})`;
+                ball.dataset.color = colorName;
+                ball.draggable = true;
+                
+                colorBallsContainer.appendChild(ball);
+            });
+        }
+
+        function generateNewTarget() {
+            // 根據關卡和連續錯誤次數選擇難度
+            let difficulty = getDifficultyForLevel();
+            
+            // 如果連續錯誤，降低難度
+            if (gameState.consecutiveWrong >= 2) {
+                difficulty = 'easy';
+            }
+            
+            const targets = gameConfig.targets[difficulty];
+            
+            // 為每個難度維護獨立的使用記錄
+            if (!gameState.usedTargetsByDifficulty) {
+                gameState.usedTargetsByDifficulty = { easy: [], medium: [], hard: [] };
+            }
+            
+            const usedTargetsForDifficulty = gameState.usedTargetsByDifficulty[difficulty];
+            
+            // 避免重複的目標顏色
+            let availableTargets = targets.filter(target => 
+                !usedTargetsForDifficulty.includes(target.name)
+            );
+            
+            // 如果該難度的所有目標都用過了，重置該難度的使用記錄
+            if (availableTargets.length === 0) {
+                gameState.usedTargetsByDifficulty[difficulty] = [];
+                availableTargets = targets;
+                console.log(`Reset ${difficulty} targets pool - now has ${availableTargets.length} targets available`);
+            }
+            
+            const randomTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+            gameState.targetColor = randomTarget;
+            gameState.usedTargetsByDifficulty[difficulty].push(randomTarget.name);
+            gameState.currentDifficulty = difficulty;
+            
+            console.log(`Selected ${difficulty} target: ${randomTarget.name}, remaining in pool: ${targets.length - gameState.usedTargetsByDifficulty[difficulty].length}`);
+            
+            const [r, g, b] = randomTarget.result;
+            document.getElementById('targetDisplay').style.background = `rgb(${r}, ${g}, ${b})`;
+            
+            // 顯示顏色資訊和難度
+            const colorInfo = document.getElementById('colorInfo');
+            const difficultyEmoji = { easy: '⭐', medium: '⭐⭐', hard: '⭐⭐⭐' };
+            const colorCount = randomTarget.colors.length;
+            const colorCountText = colorCount === 2 ? '雙色' : '三色';
+            
+            colorInfo.innerHTML = `
+                <div>${randomTarget.name} ${difficultyEmoji[difficulty]} (${colorCountText})</div>
+                <div style="font-size: 0.8rem; color: #888;">RGB: (${r}, ${g}, ${b})</div>
+            `;
+            
+            // 更新色彩學提示
+            updateColorTheoryTip(randomTarget.colors);
+            
+            // 隱藏提示
+            document.getElementById('hintDisplay').style.display = 'none';
+        }
+
+        function updateColorTheoryTip(targetColors) {
+            // 尋找匹配的色彩學提示
+            const matchingTip = colorTheoryTips.find(tip => {
+                if (tip.colors.length !== targetColors.length) return false;
+                return tip.colors.every(color => targetColors.includes(color));
+            });
+            
+            const tipContent = document.getElementById('tipContent');
+            
+            if (matchingTip) {
+                tipContent.innerHTML = `<div style="font-size: 0.85rem; color: #666; line-height: 1.4; text-align: center;">${matchingTip.tip}</div>`;
+            } else {
+                // 通用提示
+                const colorNames = targetColors.map(color => getColorName(color));
+                const generalTips = [
+                    `🎨 試試混合 ${colorNames.join(' + ')}！<br>✨ 每種顏色都有獨特的個性！`,
+                    `🌈 顏色混合是藝術的魔法！<br>🎭 發揮創意，探索色彩世界！`,
+                    `💫 混色小秘訣：慢慢加入顏色<br>🎪 觀察每一步的變化！`,
+                    `🎨 色彩有溫度：紅黃橘是暖色<br>❄️ 藍綠紫是涼爽的冷色！`
+                ];
+                const randomTip = generalTips[Math.floor(Math.random() * generalTips.length)];
+                tipContent.innerHTML = `<div style="font-size: 0.85rem; color: #666; line-height: 1.4; text-align: center;">${randomTip}</div>`;
+            }
+        }
+        
+        function getDifficultyForLevel() {
+            if (gameState.currentLevel === 1) {
+                return Math.random() < 0.7 ? 'easy' : 'medium';
+            } else if (gameState.currentLevel === 2) {
+                return Math.random() < 0.5 ? 'medium' : (Math.random() < 0.8 ? 'easy' : 'hard');
+            } else {
+                // 第三關主要以三色混合為主，減少與前面關卡的重複
+                const rand = Math.random();
+                if (rand < 0.15) return 'easy';   // 大幅減少簡單題目
+                if (rand < 0.25) return 'medium'; // 減少中等題目
+                return 'hard';                    // 主要是困難題目(三色混合)
+            }
+        }
+
+        function setupDragAndDrop() {
+            const colorBalls = document.querySelectorAll('.color-ball');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            colorBalls.forEach(ball => {
+                ball.addEventListener('dragstart', handleDragStart);
+                ball.addEventListener('click', handleColorClick);
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.color);
+        }
+
+        function handleColorClick(e) {
+            const color = e.target.dataset.color;
+            const maxColors = gameState.targetColor ? gameState.targetColor.colors.length : 2;
+            if (gameState.selectedColors.length < maxColors) {
+                addColorToMix(color);
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.classList.remove('drag-over');
+            const color = e.dataTransfer.getData('text/plain');
+            
+            const maxColors = gameState.targetColor ? gameState.targetColor.colors.length : 2;
+            if (gameState.selectedColors.length < maxColors) {
+                addColorToMix(color);
+            }
+        }
+
+        function addColorToMix(color) {
+            const maxColors = gameState.targetColor ? gameState.targetColor.colors.length : 2;
+            if (gameState.selectedColors.length < maxColors && !gameState.selectedColors.includes(color)) {
+                gameState.selectedColors.push(color);
+                updateMixingDisplay();
+            }
+        }
+
+        function updateMixingDisplay() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+            const maxColors = gameState.targetColor ? gameState.targetColor.colors.length : 2;
+            
+            // 顯示或隱藏第三個混色區域
+            const dropZone3 = document.getElementById('dropZone3');
+            const thirdPlus = document.getElementById('thirdPlus');
+            
+            if (maxColors === 3) {
+                dropZone3.style.display = 'flex';
+                thirdPlus.style.display = 'block';
+            } else {
+                dropZone3.style.display = 'none';
+                thirdPlus.style.display = 'none';
+            }
+            
+            gameState.selectedColors.forEach((color, index) => {
+                if (dropZones[index]) {
+                    const colorData = colorMixing[color];
+                    const [r, g, b] = colorData.rgb;
+                    dropZones[index].style.background = `rgb(${r}, ${g}, ${b})`;
+                    dropZones[index].querySelector('.plus-sign').style.display = 'none';
+                }
+            });
+
+            if (gameState.selectedColors.length === maxColors) {
+                let mixedColor;
+                if (maxColors === 2) {
+                    mixedColor = mixColors(gameState.selectedColors[0], gameState.selectedColors[1]);
+                } else if (maxColors === 3) {
+                    mixedColor = mixThreeColors(gameState.selectedColors[0], gameState.selectedColors[1], gameState.selectedColors[2]);
+                }
+                const [r, g, b] = mixedColor;
+                document.getElementById('resultDisplay').style.background = `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        function mixColors(color1, color2) {
+            // 特殊混色規則 - 基於真實色彩理論
+            const mixingRules = {
+                'red-yellow': [255, 165, 0],    // 橘色
+                'yellow-red': [255, 165, 0],    // 橘色
+                'blue-yellow': [0, 128, 0],     // 綠色
+                'yellow-blue': [0, 128, 0],     // 綠色
+                'red-blue': [128, 0, 128],      // 紫色
+                'blue-red': [128, 0, 128],      // 紫色
+                'red-white': [255, 192, 203],   // 粉紅色
+                'white-red': [255, 192, 203],   // 粉紅色
+                'blue-white': [173, 216, 230],  // 淺藍色
+                'white-blue': [173, 216, 230],  // 淺藍色
+                'yellow-white': [255, 255, 224], // 淺黃色
+                'white-yellow': [255, 255, 224], // 淺黃色
+                'red-black': [139, 0, 0],       // 深紅色
+                'black-red': [139, 0, 0],       // 深紅色
+                'blue-black': [0, 0, 139],      // 深藍色
+                'black-blue': [0, 0, 139],      // 深藍色
+                'yellow-black': [128, 128, 0],  // 橄欖色
+                'black-yellow': [128, 128, 0],  // 橄欖色
+                'green-white': [144, 238, 144], // 淺綠色
+                'white-green': [144, 238, 144], // 淺綠色
+                'green-black': [0, 100, 0],     // 深綠色
+                'black-green': [0, 100, 0],     // 深綠色
+                'yellow-green': [154, 205, 50], // 橄欖色
+                'green-yellow': [154, 205, 50]  // 橄欖色
+            };
+            
+            const key = `${color1}-${color2}`;
+            if (mixingRules[key]) {
+                return mixingRules[key];
+            }
+            
+            // 如果沒有特殊規則，使用平均混合
+            const [r1, g1, b1] = colorMixing[color1].rgb;
+            const [r2, g2, b2] = colorMixing[color2].rgb;
+            
+            return [
+                Math.round((r1 + r2) / 2),
+                Math.round((g1 + g2) / 2),
+                Math.round((b1 + b2) / 2)
+            ];
+        }
+
+        function mixThreeColors(color1, color2, color3) {
+            const [r1, g1, b1] = colorMixing[color1].rgb;
+            const [r2, g2, b2] = colorMixing[color2].rgb;
+            const [r3, g3, b3] = colorMixing[color3].rgb;
+            
+            return [
+                Math.round((r1 + r2 + r3) / 3),
+                Math.round((g1 + g2 + g3) / 3),
+                Math.round((b1 + b2 + b3) / 3)
+            ];
+        }
+
+        function checkAnswer() {
+            const maxColors = gameState.targetColor ? gameState.targetColor.colors.length : 2;
+            
+            if (gameState.selectedColors.length !== maxColors) {
+                const colorText = maxColors === 2 ? '兩個' : '三個';
+                showFeedback(`請選擇${colorText}顏色！`, 'incorrect');
+                return;
+            }
+
+            let userMix;
+            if (maxColors === 2) {
+                userMix = mixColors(gameState.selectedColors[0], gameState.selectedColors[1]);
+            } else {
+                userMix = mixThreeColors(gameState.selectedColors[0], gameState.selectedColors[1], gameState.selectedColors[2]);
+            }
+            
+            const targetMix = gameState.targetColor.result;
+            
+            // 檢查是否包含所有必要的顏色
+            const hasAllColors = gameState.targetColor.colors.every(color => 
+                gameState.selectedColors.includes(color)
+            );
+            
+            // 更寬鬆的顏色比對（根據難度調整容忍度）
+            const tolerance = gameState.currentDifficulty === 'easy' ? 60 : 
+                             gameState.currentDifficulty === 'medium' ? 45 : 30;
+            
+            const isCorrect = colorsMatch(userMix, targetMix, tolerance) || hasAllColors;
+
+            if (isCorrect) {
+                const points = gameState.currentDifficulty === 'easy' ? 5 : 
+                              gameState.currentDifficulty === 'medium' ? 10 : 15;
+                gameState.score += points;
+                gameState.correctAnswers++;
+                gameState.consecutiveWrong = 0;
+                showFeedback(`正確！ +${points}分`, 'correct');
+                
+                // 隱藏提示
+                document.getElementById('hintDisplay').style.display = 'none';
+            } else {
+                gameState.score = Math.max(0, gameState.score - 1);
+                gameState.incorrectAnswers++;
+                gameState.consecutiveWrong++;
+                showFeedback('再試試看！ -1分', 'incorrect');
+                
+                // 連續錯誤兩次後顯示提示
+                if (gameState.consecutiveWrong >= 2) {
+                    showHint();
+                }
+            }
+
+            updateDisplay();
+            resetMixing();
+            
+            setTimeout(() => {
+                checkLevelProgress();
+            }, 1500);
+        }
+        
+        function showHint() {
+            const hintDisplay = document.getElementById('hintDisplay');
+            const targetColors = gameState.targetColor.colors;
+            
+            // 高亮正確的顏色球
+            const colorBalls = document.querySelectorAll('.color-ball');
+            colorBalls.forEach(ball => {
+                if (targetColors.includes(ball.dataset.color)) {
+                    ball.style.border = '4px solid #FFE66D';
+                    ball.style.boxShadow = '0 0 15px rgba(255, 230, 109, 0.8)';
+                } else {
+                    ball.style.border = '4px solid white';
+                    ball.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+                }
+            });
+            
+            hintDisplay.innerHTML = `💡 提示：試試用 ${targetColors.map(color => {
+                const colorData = colorMixing[color];
+                return `<span style="color: ${colorData.hex}; font-weight: bold;">${getColorName(color)}</span>`;
+            }).join(' + ')} 來混合！`;
+            hintDisplay.style.display = 'block';
+        }
+        
+        function getColorName(colorKey) {
+            const names = {
+                red: '紅色', yellow: '黃色', blue: '藍色',
+                white: '白色', black: '黑色', green: '綠色'
+            };
+            return names[colorKey] || colorKey;
+        }
+
+        function colorsMatch(color1, color2, tolerance = 30) {
+            const [r1, g1, b1] = color1;
+            const [r2, g2, b2] = color2;
+            
+            return Math.abs(r1 - r2) <= tolerance && 
+                   Math.abs(g1 - g2) <= tolerance && 
+                   Math.abs(b1 - b2) <= tolerance;
+        }
+
+        function showFeedback(message, type) {
+            const feedback = document.createElement('div');
+            feedback.className = `feedback ${type}`;
+            feedback.textContent = message;
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => {
+                if (document.body.contains(feedback)) {
+                    document.body.removeChild(feedback);
+                }
+            }, 1500);
+        }
+
+
+
+        function clearColors() {
+            gameState.selectedColors = [];
+            const dropZones = document.querySelectorAll('.drop-zone');
+            dropZones.forEach(zone => {
+                zone.style.background = 'rgba(255,255,255,0.5)';
+                zone.querySelector('.plus-sign').style.display = 'block';
+            });
+            
+            // 隱藏第三個混色區域
+            document.getElementById('dropZone3').style.display = 'none';
+            document.getElementById('thirdPlus').style.display = 'none';
+            
+            document.getElementById('resultDisplay').style.background = '#f0f0f0';
+            
+            // 重置顏色球的高亮效果
+            const colorBalls = document.querySelectorAll('.color-ball');
+            colorBalls.forEach(ball => {
+                ball.style.border = '4px solid white';
+                ball.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+            });
+            
+            showFeedback('顏色已清除！', 'correct');
+        }
+
+        function resetMixing() {
+            gameState.selectedColors = [];
+            const dropZones = document.querySelectorAll('.drop-zone');
+            dropZones.forEach(zone => {
+                zone.style.background = 'rgba(255,255,255,0.5)';
+                zone.querySelector('.plus-sign').style.display = 'block';
+            });
+            
+            // 隱藏第三個混色區域
+            document.getElementById('dropZone3').style.display = 'none';
+            document.getElementById('thirdPlus').style.display = 'none';
+            
+            document.getElementById('resultDisplay').style.background = '#f0f0f0';
+            generateNewTarget();
+        }
+
+        function checkLevelProgress() {
+            const req = gameConfig.requirements[gameState.currentLevel];
+            const totalAnswers = gameState.correctAnswers + gameState.incorrectAnswers;
+            const accuracy = totalAnswers > 0 ? (gameState.correctAnswers / totalAnswers) * 100 : 0;
+            
+            console.log(`Checking progress - Level: ${gameState.currentLevel}, Score: ${gameState.score}, Required Score: ${req.score}, Accuracy: ${accuracy.toFixed(1)}%, Required: ${req.accuracy}%`);
+            
+            if (gameState.currentLevel === 3) {
+                // 第三關：達到分數和準確率要求，或時間到
+                if ((gameState.score >= req.score && accuracy >= req.accuracy) || gameState.timer <= 0) {
+                    if (gameState.score >= req.score && accuracy >= req.accuracy) {
+                        levelComplete();
+                    } else {
+                        gameOver();
+                    }
+                }
+            } else {
+                // 第一、二關：達到分數和準確率要求即可升級
+                if (gameState.score >= req.score && accuracy >= req.accuracy) {
+                    levelComplete();
+                }
+            }
+        }
+
+        function levelComplete() {
+            if (gameState.currentLevel >= 3) {
+                gameWin();
+            } else {
+                // 顯示關卡完成訊息
+                showFeedback(`第${gameState.currentLevel}關完成！`, 'correct');
+                
+                // 升級到下一關
+                gameState.currentLevel++;
+                
+                // 重置關卡進度計數器
+                gameState.correctAnswers = 0;
+                gameState.usedTargets = [];
+                // 重置題目池，讓新關卡有全新的題目體驗
+                gameState.usedTargetsByDifficulty = { easy: [], medium: [], hard: [] };
+                
+                // 延遲顯示新關卡開始訊息
+                setTimeout(() => {
+                    showFeedback(`第${gameState.currentLevel}關開始！`, 'correct');
+                    updateDisplay();
+                }, 1000);
+                
+                console.log(`Level up! Now at level ${gameState.currentLevel}, correctAnswers reset to ${gameState.correctAnswers}`);
+            }
+        }
+
+        function gameWin() {
+            gameState.isGameActive = false;
+            clearInterval(gameState.timerInterval);
+            
+            // 顯示最終統計
+            setTimeout(() => {
+                showFinalStats('🎉 恭喜通關！你是混色大師！');
+            }, 500);
+        }
+
+        function gameOver() {
+            gameState.isGameActive = false;
+            clearInterval(gameState.timerInterval);
+            
+            // 顯示最終統計
+            setTimeout(() => {
+                showFinalStats('⏰ 時間到了！再試一次吧！');
+            }, 500);
+        }
+
+        function showFinalStats(message) {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('endScreen').style.display = 'flex';
+            document.getElementById('finalMessage').textContent = message;
+            
+            // 計算統計數據
+            const totalAnswers = gameState.correctAnswers + gameState.incorrectAnswers;
+            const accuracy = totalAnswers > 0 ? Math.round((gameState.correctAnswers / totalAnswers) * 100) : 0;
+            
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalCorrect').textContent = gameState.correctAnswers;
+            document.getElementById('finalIncorrect').textContent = gameState.incorrectAnswers;
+            document.getElementById('finalAccuracy').textContent = accuracy + '%';
+            document.getElementById('finalLevel').textContent = gameState.currentLevel;
+        }
+
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                if (gameState.isGameActive && gameState.timer > 0) {
+                    gameState.timer--;
+                    updateDisplay();
+                    
+                    if (gameState.timer <= 0 && gameState.currentLevel === 3) {
+                        checkLevelProgress();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            document.getElementById('timer').textContent = gameState.timer;
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.currentLevel;
+            
+            const req = gameConfig.requirements[gameState.currentLevel];
+            const totalAnswers = gameState.correctAnswers + gameState.incorrectAnswers;
+            const accuracy = totalAnswers > 0 ? (gameState.correctAnswers / totalAnswers) * 100 : 0;
+            
+            let progress, progressText;
+            
+            if (gameState.currentLevel === 3) {
+                // 第三關顯示分數和準確率進度
+                const scoreProgress = Math.min((gameState.score / req.score) * 100, 100);
+                const accuracyProgress = Math.min((accuracy / req.accuracy) * 100, 100);
+                progress = Math.min(scoreProgress, accuracyProgress);
+                progressText = `${gameState.score}/${req.score}分 | ${accuracy.toFixed(0)}%/${req.accuracy}%`;
+            } else {
+                // 第一、二關顯示分數和準確率進度
+                const scoreProgress = Math.min((gameState.score / req.score) * 100, 100);
+                const accuracyProgress = Math.min((accuracy / req.accuracy) * 100, 100);
+                progress = Math.min(scoreProgress, accuracyProgress);
+                progressText = `${gameState.score}/${req.score}分 | ${accuracy.toFixed(0)}%/${req.accuracy}%`;
+            }
+            
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = progressText;
+        }
+
+        function restartGame() {
+            // 重置遊戲狀態
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+            
+            gameState = {
+                currentLevel: 1,
+                score: 0,
+                timer: 120,
+                correctAnswers: 0,
+                incorrectAnswers: 0,
+                targetColor: null,
+                selectedColors: [],
+                isGameActive: false,
+                timerInterval: null,
+                usedTargets: [],
+                usedTargetsByDifficulty: { easy: [], medium: [], hard: [] },
+                consecutiveWrong: 0,
+                currentDifficulty: 'easy'
+            };
+            
+            document.getElementById('endScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        function toggleColorTips() {
+            gameState.showColorTips = !gameState.showColorTips;
+            const tipContent = document.getElementById('tipContent');
+            const tipIcon = document.getElementById('tipToggleIcon');
+            
+            if (gameState.showColorTips) {
+                tipContent.classList.remove('hidden');
+                tipIcon.textContent = '👁️';
+                showFeedback('色彩提示已開啟！', 'correct');
+            } else {
+                tipContent.classList.add('hidden');
+                tipIcon.textContent = '🙈';
+                showFeedback('色彩提示已關閉！', 'incorrect');
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 遊戲啟動時顯示版本選擇
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e654b8c7da8460',t:'MTc1Nzc1MjczMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
