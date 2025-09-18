@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金庫密碼解鎖遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.15) 0%, transparent 50%);
+            z-index: -2;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: var(--bg-image, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'%3E%3Cdefs%3E%3ClinearGradient id='tower-grad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23654321;stop-opacity:0.8'/%3E%3Cstop offset='100%25' style='stop-color:%232d1810;stop-opacity:0.9'/%3E%3C/linearGradient%3E%3ClinearGradient id='castle-grad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b7355;stop-opacity:0.7'/%3E%3Cstop offset='100%25' style='stop-color:%234a3728;stop-opacity:0.8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg opacity='0.4'%3E%3Cpath d='M50 600 L50 300 L80 280 L80 250 L120 230 L120 200 L100 180 L140 160 L140 130 L160 110 L160 80 L180 60 L180 30 L200 10 L220 30 L220 60 L240 80 L240 110 L260 130 L260 160 L300 180 L280 200 L280 230 L320 250 L320 280 L350 300 L350 600 Z' fill='url(%23tower-grad)' stroke='%23ffd700' stroke-width='2' opacity='0.6'/%3E%3Crect x='160' y='80' width='80' height='40' fill='%23654321' opacity='0.8'/%3E%3Ccircle cx='200' cy='50' r='25' fill='%238b4513' opacity='0.7'/%3E%3Cpath d='M175 50 L200 25 L225 50 Z' fill='%23ffd700' opacity='0.8'/%3E%3C/g%3E%3Cg opacity='0.3'%3E%3Cpath d='M900 650 L900 400 L920 380 L920 350 L940 330 L940 300 L960 280 L960 250 L980 230 L980 200 L1000 180 L1000 150 L1020 130 L1020 100 L1040 80 L1040 50 L1060 30 L1080 50 L1080 80 L1100 100 L1100 130 L1120 150 L1120 180 L1140 200 L1140 230 L1160 250 L1160 280 L1180 300 L1180 330 L1200 350 L1200 650 Z' fill='url(%23castle-grad)' stroke='%23cd853f' stroke-width='1.5'/%3E%3Crect x='1040' y='50' width='40' height='30' fill='%23654321'/%3E%3Ccircle cx='1060' cy='35' r='15' fill='%238b4513'/%3E%3C/g%3E%3Cg opacity='0.2'%3E%3Ccircle cx='300' cy='150' r='3' fill='%23ffd700'/%3E%3Ccircle cx='800' cy='200' r='2' fill='%2387ceeb'/%3E%3Ccircle cx='150' cy='100' r='2' fill='%23ffd700'/%3E%3Ccircle cx='1000' cy='120' r='3' fill='%2387ceeb'/%3E%3Ccircle cx='600' cy='80' r='2' fill='%23ffd700'/%3E%3C/g%3E%3C/svg%3E"));
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.6;
+            z-index: -1;
+        }
+        
+        .game-container {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 30px rgba(255, 215, 0, 0.2);
+            max-width: 1200px;
+            width: 95%;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        .bg-upload-section {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+        }
+        
+        .designer-credit {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            font-size: 0.8rem;
+            color: rgba(255, 215, 0, 0.7);
+            font-style: normal;
+            z-index: 10;
+            opacity: 1;
+        }
+        
+        .bg-upload-btn {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .bg-upload-btn:hover {
+            background: rgba(255, 215, 0, 0.3);
+            transform: scale(1.05);
+        }
+        
+        #bgUpload {
+            display: none;
+        }
+        
+        .header-section {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 0;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            color: #ffd700;
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.5);
+            margin: 0 0 15px 0;
+        }
+        
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        .level, .timer, .score {
+            font-size: 1.3rem;
+            color: #87ceeb;
+            background: rgba(135, 206, 235, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #87ceeb;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            display: inline-block;
+        }
+        
+        .timer {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+            border-color: #ff6b6b;
+        }
+        
+        .timer.warning {
+            animation: pulse 1s infinite;
+        }
+        
+        .score {
+            color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .clock-section {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-left: 40px;
+        }
+        
+        .instructions-section {
+            grid-column: 3;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .password-section {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+        
+        .clock-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto;
+            background: radial-gradient(circle, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            border-radius: 50%;
+            border: 8px solid #ffd700;
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.6),
+                inset 0 0 20px rgba(0, 0, 0, 0.8),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .clock-title {
+            font-size: 1.5rem;
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .clock-face {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        
+        .number {
+            position: absolute;
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #ffd700;
+            transform: translate(-50%, -50%);
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.9),
+                0 0 15px rgba(255, 215, 0, 0.9);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 8px;
+            border-radius: 50%;
+            min-width: 30px;
+            text-align: center;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 80px;
+            background: linear-gradient(to top, #ff4444, #ff6666);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+            transition: transform 1s ease-in-out;
+        }
+        
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #ffd700;
+            height: fit-content;
+        }
+        
+        .instruction-title {
+            font-size: 1.3rem;
+            color: #ffd700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .instruction-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .instruction-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            border-left: 4px solid #87ceeb;
+        }
+        
+        .password-section {
+            margin: 0;
+        }
+        
+        .password-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+        
+        .password-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .password-input {
+            width: 60px;
+            height: 60px;
+            font-size: 2rem;
+            text-align: center;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .password-input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            transform: scale(1.05);
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .feedback {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .feedback.correct {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            border: 2px solid #4caf50;
+        }
+        
+        .feedback.incorrect {
+            background: rgba(244, 67, 54, 0.8);
+            color: white;
+            border: 2px solid #f44336;
+        }
+        
+        .next-level-btn {
+            background: linear-gradient(45deg, #4caf50, #66bb6a);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+                gap: 20px;
+            }
+            
+            .header-section {
+                grid-column: 1;
+            }
+            
+            .clock-section {
+                grid-column: 1;
+                padding-left: 0;
+            }
+            
+            .instructions-section {
+                grid-column: 1;
+            }
+            
+            .password-section {
+                grid-column: 1;
+            }
+            
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .game-stats {
+                gap: 15px;
+            }
+            
+            .level, .timer, .score {
+                font-size: 1.1rem;
+                padding: 6px 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 20px;
+                max-width: 95%;
+            }
+            
+            .title {
+                font-size: 1.6rem;
+            }
+            
+            .clock-container {
+                width: 220px;
+                height: 220px;
+            }
+            
+            .number {
+                font-size: 1.3rem;
+                padding: 2px 6px;
+                min-width: 25px;
+            }
+            
+            .password-inputs {
+                gap: 8px;
+            }
+            
+            .password-input {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+            
+            .instruction-item {
+                font-size: 1rem;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="bg-upload-section">
+            <label for="bgUpload" class="bg-upload-btn">🖼️ 更換背景</label>
+            <input type="file" id="bgUpload" accept="image/*">
+        </div>
+        
+        <div class="designer-credit">仙姑凱西設計</div>
+        
+        <div class="header-section">
+            <h1 class="title">喵時密碼：旋轉指針鎖</h1>
+            <div class="game-stats">
+                <div class="level">第 <span id="levelNumber">1</span> 關</div>
+                <div class="timer" id="timer">時間: <span id="timeLeft">60</span>s</div>
+                <div class="score">分數: <span id="scoreValue">0</span></div>
+            </div>
+        </div>
+        
+        <div class="clock-section">
+            <div class="clock-title">喵形密碼盤</div>
+            <div class="clock-container">
+                <div class="clock-face">
+                    <div class="pointer" id="pointer"></div>
+                    <div class="center-dot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions-section">
+            <div class="instructions">
+                <div class="instruction-title">旋轉指針咒語</div>
+                <ul class="instruction-list" id="instructionList">
+                </ul>
+            </div>
+        </div>
+        
+        <div class="password-section">
+            <div class="password-title">輸入四位數密碼</div>
+            <div class="password-inputs">
+                <input type="number" class="password-input" id="digit1" min="1" max="12" maxlength="2">
+                <input type="number" class="password-input" id="digit2" min="1" max="12" maxlength="2">
+                <input type="number" class="password-input" id="digit3" min="1" max="12" maxlength="2">
+                <input type="number" class="password-input" id="digit4" min="1" max="12" maxlength="2">
+            </div>
+            <button class="button" onclick="checkPassword()">解鎖</button>
+        </div>
+        
+        <div class="feedback" id="feedback"></div>
+        
+        <button class="button next-level-btn" id="nextLevelBtn" onclick="nextLevel()" style="display: none;">
+            ➡️ 下一關
+        </button>
+    </div>
+
+    <script>
+        let currentLevel = 1;
+        let currentInstructions = [];
+        let correctAnswers = [];
+        let timeLeft = 60;
+        let timerInterval = null;
+        let score = 0;
+        let gameActive = true;
+        
+        // 初始化時鐘數字位置
+        function initializeClock() {
+            const clockFace = document.querySelector('.clock-face');
+            
+            // 清除現有數字
+            const existingNumbers = clockFace.querySelectorAll('.number');
+            existingNumbers.forEach(num => num.remove());
+            
+            // 添加12個數字
+            for (let i = 1; i <= 12; i++) {
+                const number = document.createElement('div');
+                number.className = 'number';
+                number.textContent = i;
+                
+                // 計算位置 (12點鐘方向為0度)
+                const angle = (i - 3) * 30; // 調整使12在頂部
+                const radius = 105; // 調整半徑適應新尺寸
+                const x = 50 + radius * Math.cos(angle * Math.PI / 180);
+                const y = 50 + radius * Math.sin(angle * Math.PI / 180);
+                
+                number.style.left = x + '%';
+                number.style.top = y + '%';
+                
+                clockFace.appendChild(number);
+            }
+        }
+        
+        // 計時器功能
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timeLeft').textContent = timeLeft;
+                
+                // 時間警告效果
+                const timerElement = document.getElementById('timer');
+                if (timeLeft <= 10) {
+                    timerElement.classList.add('warning');
+                } else {
+                    timerElement.classList.remove('warning');
+                }
+                
+                // 時間到
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameActive = false;
+                    const feedback = document.getElementById('feedback');
+                    feedback.textContent = `⏰ 時間到！正確答案是：${correctAnswers.join('-')}`;
+                    feedback.className = 'feedback incorrect';
+                    document.getElementById('nextLevelBtn').style.display = 'inline-block';
+                }
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+        
+        function resetTimer() {
+            timeLeft = Math.max(45, 60 - currentLevel * 2); // 每關減少2秒，最少45秒
+            document.getElementById('timeLeft').textContent = timeLeft;
+            document.getElementById('timer').classList.remove('warning');
+        }
+        
+        function updateScore(points) {
+            score += points;
+            document.getElementById('scoreValue').textContent = score;
+        }
+        
+        // 生成隨機指令
+        function generateInstructions() {
+            const instructions = [];
+            const answers = [];
+            let currentAngle = 0; // 從12點鐘開始 (0度)
+            
+            for (let i = 0; i < 4; i++) {
+                const isClockwise = Math.random() > 0.5;
+                const degrees = (Math.floor(Math.random() * 6) + 1) * 30; // 30-180度，30度的倍數
+                
+                const direction = isClockwise ? '順時針' : '逆時針';
+                const rotation = isClockwise ? degrees : -degrees;
+                
+                currentAngle += rotation;
+                currentAngle = ((currentAngle % 360) + 360) % 360; // 確保角度在0-360之間
+                
+                // 計算對應的時鐘數字 (12點鐘為0度)
+                let clockNumber = Math.round(currentAngle / 30);
+                if (clockNumber === 0) clockNumber = 12;
+                
+                instructions.push(`${direction}轉 ${degrees}°`);
+                answers.push(clockNumber);
+            }
+            
+            return { instructions, answers };
+        }
+        
+        // 開始新關卡
+        function startLevel() {
+            const result = generateInstructions();
+            currentInstructions = result.instructions;
+            correctAnswers = result.answers;
+            gameActive = true;
+            
+            // 更新關卡顯示
+            document.getElementById('levelNumber').textContent = currentLevel;
+            
+            // 重置並開始計時器
+            resetTimer();
+            startTimer();
+            
+            // 更新指令列表
+            const instructionList = document.getElementById('instructionList');
+            instructionList.innerHTML = '';
+            
+            currentInstructions.forEach((instruction, index) => {
+                const li = document.createElement('li');
+                li.className = 'instruction-item';
+                li.textContent = `${index + 1}. ${instruction}`;
+                instructionList.appendChild(li);
+            });
+            
+            // 重置輸入欄位
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`digit${i}`).value = '';
+            }
+            
+            // 重置反饋和按鈕
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('nextLevelBtn').style.display = 'none';
+            
+            // 重置指針位置
+            document.getElementById('pointer').style.transform = 'translate(-50%, -100%) rotate(0deg)';
+        }
+        
+        // 檢查密碼
+        function checkPassword() {
+            if (!gameActive) return;
+            
+            const userAnswers = [];
+            let allFilled = true;
+            
+            for (let i = 1; i <= 4; i++) {
+                const value = parseInt(document.getElementById(`digit${i}`).value);
+                if (isNaN(value) || value < 1 || value > 12) {
+                    allFilled = false;
+                    break;
+                }
+                userAnswers.push(value);
+            }
+            
+            const feedback = document.getElementById('feedback');
+            
+            if (!allFilled) {
+                feedback.textContent = '請輸入完整的四位數密碼 (1-12)';
+                feedback.className = 'feedback incorrect';
+                return;
+            }
+            
+            // 停止計時器
+            stopTimer();
+            gameActive = false;
+            
+            // 檢查答案
+            const isCorrect = userAnswers.every((answer, index) => answer === correctAnswers[index]);
+            
+            if (isCorrect) {
+                // 計算分數：基礎分數 + 時間獎勵 + 關卡獎勵
+                const baseScore = 100;
+                const timeBonus = timeLeft * 2;
+                const levelBonus = currentLevel * 10;
+                const totalPoints = baseScore + timeBonus + levelBonus;
+                
+                updateScore(totalPoints);
+                
+                feedback.textContent = `🎉 恭喜！密碼正確！獲得 ${totalPoints} 分！`;
+                feedback.className = 'feedback correct';
+                document.getElementById('nextLevelBtn').style.display = 'inline-block';
+                
+                // 顯示指針最終位置動畫
+                animatePointer();
+            } else {
+                feedback.textContent = `❌ 密碼錯誤！正確答案是：${correctAnswers.join('-')}`;
+                feedback.className = 'feedback incorrect';
+                document.getElementById('nextLevelBtn').style.display = 'inline-block';
+            }
+        }
+        
+        // 指針動畫
+        function animatePointer() {
+            const pointer = document.getElementById('pointer');
+            let currentAngle = 0;
+            let stepIndex = 0;
+            
+            function animateStep() {
+                if (stepIndex >= currentInstructions.length) return;
+                
+                const instruction = currentInstructions[stepIndex];
+                const isClockwise = instruction.includes('順時針');
+                const degrees = parseInt(instruction.match(/\d+/)[0]);
+                const rotation = isClockwise ? degrees : -degrees;
+                
+                currentAngle += rotation;
+                
+                setTimeout(() => {
+                    pointer.style.transform = `translate(-50%, -100%) rotate(${currentAngle}deg)`;
+                    stepIndex++;
+                    
+                    if (stepIndex < currentInstructions.length) {
+                        setTimeout(animateStep, 1200);
+                    }
+                }, 300);
+            }
+            
+            animateStep();
+        }
+        
+        // 下一關
+        function nextLevel() {
+            currentLevel++;
+            startLevel();
+        }
+        
+        // 輸入欄位自動跳轉
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.password-input');
+            
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    if (this.value.length >= 2 || (this.value.length === 1 && parseInt(this.value) > 1)) {
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        }
+                    }
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        checkPassword();
+                    }
+                });
+            });
+        });
+        
+        // 背景上傳功能
+        document.getElementById('bgUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageUrl = e.target.result;
+                    document.documentElement.style.setProperty('--bg-image', `url(${imageUrl})`);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 初始化遊戲
+        initializeClock();
+        startLevel();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981139b770d2844c',t:'MTc1ODIwMjUxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
