@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鐘面密碼創作挑戰</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .creator-panel, .challenge-panel {
+            flex: 1;
+            padding: 30px;
+        }
+        
+        .creator-panel {
+            border-right: 2px solid #f0f0f0;
+            background: #f8f9ff;
+        }
+        
+        .panel-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .clock-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .clock {
+            width: 200px;
+            height: 200px;
+            border: 8px solid #333;
+            border-radius: 50%;
+            position: relative;
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .clock-numbers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .number {
+            position: absolute;
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .hand {
+            position: absolute;
+            background: #ff6b6b;
+            transform-origin: bottom center;
+            border-radius: 10px;
+            transition: transform 0.5s ease;
+        }
+        
+        .hour-hand {
+            width: 6px;
+            height: 60px;
+            left: 50%;
+            bottom: 50%;
+            margin-left: -3px;
+        }
+        
+        .minute-hand {
+            width: 4px;
+            height: 80px;
+            left: 50%;
+            bottom: 50%;
+            margin-left: -2px;
+            background: #4ecdc4;
+        }
+        
+        .center-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .rotation-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .rotation-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .rotation-input select, .rotation-input input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .password-inputs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .password-input {
+            text-align: center;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .challenge-display {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .timer {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+        
+        .answer-inputs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .answer-input {
+            text-align: center;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        
+        .result {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .rotation-display {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .score-board {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .score-item {
+            display: inline-block;
+            margin: 0 15px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .achievement {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin: 10px 5px;
+            display: inline-block;
+            font-size: 14px;
+            animation: bounce 0.5s ease;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .score-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: scorePopup 2s ease;
+        }
+        
+        @keyframes scorePopup {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕐 鐘面密碼創作挑戰 🔐</h1>
+            <p>創建你的鐘面旋轉密碼，挑戰你的同學！</p>
+        </div>
+        
+        <div class="content">
+            <!-- 創作面板 -->
+            <div class="creator-panel">
+                <h2 class="panel-title">📝 創作你的題目</h2>
+                
+                <div class="clock-container">
+                    <div class="clock" id="creatorClock">
+                        <div class="clock-numbers"></div>
+                        <div class="hand hour-hand" id="creatorHourHand"></div>
+                        <div class="hand minute-hand" id="creatorMinuteHand"></div>
+                        <div class="center-dot"></div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>🔄 設定四段旋轉指令：</label>
+                    <div class="rotation-inputs">
+                        <div class="rotation-input">
+                            <span>1.</span>
+                            <select id="direction1">
+                                <option value="clockwise">順時針</option>
+                                <option value="counterclockwise">逆時針</option>
+                            </select>
+                            <input type="number" id="angle1" min="30" max="360" step="30" value="90" placeholder="角度">
+                            <span>度</span>
+                        </div>
+                        <div class="rotation-input">
+                            <span>2.</span>
+                            <select id="direction2">
+                                <option value="clockwise">順時針</option>
+                                <option value="counterclockwise">逆時針</option>
+                            </select>
+                            <input type="number" id="angle2" min="30" max="360" step="30" value="120" placeholder="角度">
+                            <span>度</span>
+                        </div>
+                        <div class="rotation-input">
+                            <span>3.</span>
+                            <select id="direction3">
+                                <option value="clockwise">順時針</option>
+                                <option value="counterclockwise">逆時針</option>
+                            </select>
+                            <input type="number" id="angle3" min="30" max="360" step="30" value="60" placeholder="角度">
+                            <span>度</span>
+                        </div>
+                        <div class="rotation-input">
+                            <span>4.</span>
+                            <select id="direction4">
+                                <option value="clockwise">順時針</option>
+                                <option value="counterclockwise">逆時針</option>
+                            </select>
+                            <input type="number" id="angle4" min="30" max="360" step="30" value="150" placeholder="角度">
+                            <span>度</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>🔢 設定正確的喵時密碼（1-12）：</label>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" class="btn btn-warning" onclick="togglePasswordVisibility()" id="toggleBtn">
+                            👁️ 隱藏答案
+                        </button>
+                        <span style="font-size: 14px; color: #666;">點擊隱藏答案，防止其他同學偷看</span>
+                    </div>
+                    <div class="password-inputs" id="passwordContainer">
+                        <input type="number" class="password-input" id="password1" min="1" max="12" placeholder="?">
+                        <input type="number" class="password-input" id="password2" min="1" max="12" placeholder="?">
+                        <input type="number" class="password-input" id="password3" min="1" max="12" placeholder="?">
+                        <input type="number" class="password-input" id="password4" min="1" max="12" placeholder="?">
+                    </div>
+                    <div class="password-hidden" id="passwordHidden" style="display: none;">
+                        <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; text-align: center; border: 2px dashed #ccc;">
+                            <span style="font-size: 18px;">🔒 答案已隱藏</span>
+                            <p style="margin: 10px 0; color: #666;">答案已安全隱藏，其他同學看不到</p>
+                            <button type="button" class="btn btn-primary" onclick="togglePasswordVisibility()">
+                                👁️ 顯示答案
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn btn-primary" onclick="previewRotations()">🔄 預覽旋轉</button>
+                    <button class="btn btn-success" onclick="createChallenge()">✨ 生成挑戰題</button>
+                </div>
+            </div>
+            
+            <!-- 挑戰面板 -->
+            <div class="challenge-panel">
+                <h2 class="panel-title">🎯 挑戰解題</h2>
+                
+                <!-- 計分板 -->
+                <div class="score-board">
+                    <h3 style="margin-bottom: 15px;">🏆 你的成績</h3>
+                    <div class="score-item">
+                        <span>總分：</span>
+                        <span id="totalScore">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>答對：</span>
+                        <span id="correctCount">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>答錯：</span>
+                        <span id="wrongCount">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>最佳時間：</span>
+                        <span id="bestTime">--:--</span>
+                    </div>
+                </div>
+                
+                <!-- 成就系統 -->
+                <div id="achievements" style="text-align: center; margin: 20px 0;"></div>
+                
+                <div id="challengeContent" class="hidden">
+                    <div class="challenge-display">
+                        <h3>🎮 挑戰題目</h3>
+                        <div id="challengeInstructions"></div>
+                    </div>
+                    
+                    <div class="clock-container">
+                        <div class="clock" id="challengeClock">
+                            <div class="clock-numbers"></div>
+                            <div class="hand hour-hand" id="challengeHourHand"></div>
+                            <div class="hand minute-hand" id="challengeMinuteHand"></div>
+                            <div class="center-dot"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="timer" id="timer">⏱️ 00:00</div>
+                    
+                    <div class="input-group">
+                        <label>🔐 輸入你的答案（喵時密碼）：</label>
+                        <div class="answer-inputs">
+                            <input type="number" class="answer-input" id="answer1" min="1" max="12" placeholder="?">
+                            <input type="number" class="answer-input" id="answer2" min="1" max="12" placeholder="?">
+                            <input type="number" class="answer-input" id="answer3" min="1" max="12" placeholder="?">
+                            <input type="number" class="answer-input" id="answer4" min="1" max="12" placeholder="?">
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button class="btn btn-warning" onclick="startChallenge()">🚀 開始挑戰</button>
+                        <button class="btn btn-success" onclick="checkAnswer()">✅ 提交答案</button>
+                        <button class="btn btn-primary" onclick="resetChallenge()">🔄 重新開始</button>
+                    </div>
+                    
+                    <div id="result"></div>
+                </div>
+                
+                <div id="noChallenge" style="text-align: center; color: #666; padding: 50px;">
+                    <h3>🎯 等待挑戰題目</h3>
+                    <p>請先在左側創作你的題目，然後點擊「生成挑戰題」</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 設計者資訊 -->
+    <div style="text-align: center; padding: 20px; color: white; font-size: 14px; opacity: 0.8;">
+        <p>🎨 設計者：凱西仙姑設計</p>
+    </div>
+
+    <script>
+        let currentChallenge = null;
+        let startTime = null;
+        let timerInterval = null;
+        let creatorHourAngle = 0;
+        let creatorMinuteAngle = 0;
+        let challengeHourAngle = 0;
+        let challengeMinuteAngle = 0;
+        
+        // 計分系統變數
+        let gameStats = {
+            totalScore: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            bestTime: null,
+            achievements: new Set()
+        };
+
+        // 初始化時鐘數字
+        function initClockNumbers() {
+            const clocks = document.querySelectorAll('.clock-numbers');
+            clocks.forEach(clockNumbers => {
+                clockNumbers.innerHTML = '';
+                for (let i = 1; i <= 12; i++) {
+                    const number = document.createElement('div');
+                    number.className = 'number';
+                    number.textContent = i;
+                    
+                    const angle = (i - 3) * 30; // 12點在頂部
+                    const radian = angle * Math.PI / 180;
+                    const radius = 75;
+                    const x = Math.cos(radian) * radius + 92;
+                    const y = Math.sin(radian) * radius + 92;
+                    
+                    number.style.left = x + 'px';
+                    number.style.top = y + 'px';
+                    number.style.transform = 'translate(-50%, -50%)';
+                    
+                    clockNumbers.appendChild(number);
+                }
+            });
+        }
+
+        // 更新時鐘指針
+        function updateClockHands(clockId, hourAngle, minuteAngle) {
+            const hourHand = document.getElementById(clockId + 'HourHand');
+            const minuteHand = document.getElementById(clockId + 'MinuteHand');
+            
+            hourHand.style.transform = `rotate(${hourAngle}deg)`;
+            minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
+        }
+
+        // 使用精確角度更新時鐘指針（不進行角度正規化）
+        function updateClockHandsWithExactAngle(clockId, hourAngle, minuteAngle) {
+            const hourHand = document.getElementById(clockId + 'HourHand');
+            const minuteHand = document.getElementById(clockId + 'MinuteHand');
+            
+            // 直接使用累積的角度值，確保旋轉方向正確
+            hourHand.style.transform = `rotate(${hourAngle}deg)`;
+            minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
+        }
+
+        // 更新計分板顯示
+        function updateScoreBoard() {
+            document.getElementById('totalScore').textContent = gameStats.totalScore;
+            document.getElementById('correctCount').textContent = gameStats.correctCount;
+            document.getElementById('wrongCount').textContent = gameStats.wrongCount;
+            document.getElementById('bestTime').textContent = gameStats.bestTime || '--:--';
+        }
+
+        // 顯示得分動畫
+        function showScorePopup(points, message) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.innerHTML = `${message}<br>+${points} 分！`;
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 2000);
+        }
+
+        // 檢查並解鎖成就
+        function checkAchievements(timeInSeconds) {
+            const achievementsContainer = document.getElementById('achievements');
+            let newAchievements = [];
+            
+            // 首次答對
+            if (gameStats.correctCount === 1 && !gameStats.achievements.has('first_correct')) {
+                gameStats.achievements.add('first_correct');
+                newAchievements.push('🎯 初次成功');
+            }
+            
+            // 速度成就
+            if (timeInSeconds <= 30 && !gameStats.achievements.has('speed_demon')) {
+                gameStats.achievements.add('speed_demon');
+                newAchievements.push('⚡ 閃電解題');
+            }
+            
+            // 連續答對
+            if (gameStats.correctCount >= 3 && gameStats.wrongCount === 0 && !gameStats.achievements.has('perfect_streak')) {
+                gameStats.achievements.add('perfect_streak');
+                newAchievements.push('🔥 完美連擊');
+            }
+            
+            // 高分成就
+            if (gameStats.totalScore >= 500 && !gameStats.achievements.has('high_scorer')) {
+                gameStats.achievements.add('high_scorer');
+                newAchievements.push('💎 高分達人');
+            }
+            
+            // 堅持不懈
+            if (gameStats.correctCount + gameStats.wrongCount >= 10 && !gameStats.achievements.has('persistent')) {
+                gameStats.achievements.add('persistent');
+                newAchievements.push('💪 堅持不懈');
+            }
+            
+            // 顯示新成就
+            newAchievements.forEach(achievement => {
+                const achievementElement = document.createElement('div');
+                achievementElement.className = 'achievement';
+                achievementElement.textContent = achievement;
+                achievementsContainer.appendChild(achievementElement);
+                
+                // 3秒後淡出
+                setTimeout(() => {
+                    achievementElement.style.opacity = '0.7';
+                }, 3000);
+            });
+        }
+
+        // 計算得分
+        function calculateScore(timeInSeconds, isCorrect) {
+            if (!isCorrect) return 0;
+            
+            let baseScore = 100;
+            
+            // 時間獎勵（越快分數越高）
+            if (timeInSeconds <= 15) {
+                baseScore += 100; // 超快獎勵
+            } else if (timeInSeconds <= 30) {
+                baseScore += 50; // 快速獎勵
+            } else if (timeInSeconds <= 60) {
+                baseScore += 20; // 一般獎勵
+            }
+            
+            // 連續答對獎勵
+            if (gameStats.wrongCount === 0 && gameStats.correctCount > 0) {
+                baseScore += gameStats.correctCount * 10;
+            }
+            
+            return baseScore;
+        }
+
+        // 預覽旋轉
+        function previewRotations() {
+            // 重置到初始位置
+            creatorHourAngle = 0;
+            creatorMinuteAngle = 0;
+            updateClockHands('creator', creatorHourAngle, creatorMinuteAngle);
+            
+            const rotations = [];
+            for (let i = 1; i <= 4; i++) {
+                const direction = document.getElementById(`direction${i}`).value;
+                const angle = parseInt(document.getElementById(`angle${i}`).value) || 0;
+                
+                if (angle % 30 !== 0) {
+                    alert('角度必須是30的倍數！');
+                    return;
+                }
+                
+                rotations.push({
+                    direction: direction === 'clockwise' ? '順時針' : '逆時針',
+                    angle: angle
+                });
+            }
+            
+            // 執行動畫預覽
+            let delay = 500; // 開始前稍微延遲
+            rotations.forEach((rotation, index) => {
+                setTimeout(() => {
+                    const angle = rotation.direction === '順時針' ? rotation.angle : -rotation.angle;
+                    creatorHourAngle += angle;
+                    creatorMinuteAngle += angle;
+                    
+                    // 不進行角度正規化，保持累積的角度值以確保正確的旋轉方向
+                    updateClockHandsWithExactAngle('creator', creatorHourAngle, creatorMinuteAngle);
+                    
+                    // 在最後一步完成後顯示提示
+                    if (index === rotations.length - 1) {
+                        setTimeout(() => {
+                            alert('預覽完成！請檢查指針位置並設定對應的密碼。');
+                        }, 600);
+                    }
+                }, delay);
+                delay += 1000; // 每步間隔1秒
+            });
+        }
+
+        // 創建挑戰題
+        function createChallenge() {
+            // 驗證輸入
+            const passwords = [];
+            for (let i = 1; i <= 4; i++) {
+                const password = parseInt(document.getElementById(`password${i}`).value);
+                if (!password || password < 1 || password > 12) {
+                    alert('請輸入完整的密碼（1-12的數字）！');
+                    return;
+                }
+                passwords.push(password);
+            }
+            
+            const rotations = [];
+            for (let i = 1; i <= 4; i++) {
+                const direction = document.getElementById(`direction${i}`).value;
+                const angle = parseInt(document.getElementById(`angle${i}`).value) || 0;
+                
+                if (angle % 30 !== 0) {
+                    alert('角度必須是30的倍數！');
+                    return;
+                }
+                
+                rotations.push({
+                    direction: direction === 'clockwise' ? '順時針' : '逆時針',
+                    angle: angle
+                });
+            }
+            
+            currentChallenge = {
+                rotations: rotations,
+                correctAnswer: passwords
+            };
+            
+            // 顯示挑戰內容
+            document.getElementById('challengeContent').classList.remove('hidden');
+            document.getElementById('noChallenge').classList.add('hidden');
+            
+            // 生成挑戰指令顯示
+            let instructionsHTML = '<div>';
+            rotations.forEach((rotation, index) => {
+                instructionsHTML += `<div class="rotation-display">
+                    <strong>第${index + 1}步：</strong> ${rotation.direction}轉 ${rotation.angle} 度
+                </div>`;
+            });
+            instructionsHTML += '</div>';
+            
+            document.getElementById('challengeInstructions').innerHTML = instructionsHTML;
+            
+            // 重置挑戰時鐘
+            challengeHourAngle = 0;
+            challengeMinuteAngle = 0;
+            updateClockHands('challenge', challengeHourAngle, challengeMinuteAngle);
+            
+            // 清空答案輸入
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`answer${i}`).value = '';
+            }
+            
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('timer').textContent = '⏱️ 00:00';
+            
+            alert('挑戰題目已生成！點擊「開始挑戰」開始計時解題。');
+        }
+
+        // 執行旋轉動畫
+        function executeRotationAnimation() {
+            challengeHourAngle = 0;
+            challengeMinuteAngle = 0;
+            updateClockHands('challenge', challengeHourAngle, challengeMinuteAngle);
+            
+            let delay = 500; // 開始前稍微延遲
+            currentChallenge.rotations.forEach((rotation, index) => {
+                setTimeout(() => {
+                    const angle = rotation.direction === '順時針' ? rotation.angle : -rotation.angle;
+                    challengeHourAngle += angle;
+                    challengeMinuteAngle += angle;
+                    
+                    // 不進行角度正規化，保持累積的角度值以確保正確的旋轉方向
+                    updateClockHandsWithExactAngle('challenge', challengeHourAngle, challengeMinuteAngle);
+                }, delay);
+                delay += 1000; // 每步間隔1秒
+            });
+        }
+
+        // 開始挑戰
+        function startChallenge() {
+            if (!currentChallenge) {
+                alert('請先創建挑戰題目！');
+                return;
+            }
+            
+            startTime = Date.now();
+            
+            // 開始計時器
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = 
+                    `⏱️ ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+            
+            document.getElementById('result').innerHTML = '';
+            
+            // 顯示提示訊息
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 10px; color: #1565c0; margin: 20px 0;">
+                    💡 挑戰開始！請根據旋轉指令推算最終指針位置，然後提交答案。<br>
+                    答錯時系統會播放旋轉動畫幫助你理解！
+                </div>
+            `;
+        }
+
+        // 檢查答案
+        function checkAnswer() {
+            if (!currentChallenge || !startTime) {
+                alert('請先開始挑戰！');
+                return;
+            }
+            
+            const userAnswers = [];
+            let hasEmptyAnswer = false;
+            let hasInvalidAnswer = false;
+            
+            for (let i = 1; i <= 4; i++) {
+                const answerInput = document.getElementById(`answer${i}`);
+                const answer = parseInt(answerInput.value);
+                
+                if (!answerInput.value.trim()) {
+                    hasEmptyAnswer = true;
+                    answerInput.style.borderColor = '#ff6b6b';
+                    answerInput.style.backgroundColor = '#ffe6e6';
+                } else if (!answer || answer < 1 || answer > 12) {
+                    hasInvalidAnswer = true;
+                    answerInput.style.borderColor = '#ff6b6b';
+                    answerInput.style.backgroundColor = '#ffe6e6';
+                } else {
+                    answerInput.style.borderColor = '#ddd';
+                    answerInput.style.backgroundColor = 'white';
+                    userAnswers.push(answer);
+                }
+            }
+            
+            if (hasEmptyAnswer || hasInvalidAnswer) {
+                const resultDiv = document.getElementById('result');
+                let errorMessage = '❌ 輸入錯誤！<br>';
+                
+                if (hasEmptyAnswer) {
+                    errorMessage += '🔸 請填寫所有答案格子<br>';
+                }
+                if (hasInvalidAnswer) {
+                    errorMessage += '🔸 答案必須是1到12之間的數字<br>';
+                }
+                errorMessage += '💡 紅色框框表示需要修正的地方';
+                
+                resultDiv.innerHTML = `<div class="result error">${errorMessage}</div>`;
+                return;
+            }
+            
+            // 停止計時器
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // 檢查答案正確性
+            const isCorrect = JSON.stringify(userAnswers) === JSON.stringify(currentChallenge.correctAnswer);
+            
+            // 更新統計數據
+            if (isCorrect) {
+                gameStats.correctCount++;
+                const score = calculateScore(elapsed, true);
+                gameStats.totalScore += score;
+                
+                // 更新最佳時間
+                if (!gameStats.bestTime || elapsed < gameStats.bestTimeSeconds) {
+                    gameStats.bestTime = timeString;
+                    gameStats.bestTimeSeconds = elapsed;
+                }
+                
+                // 顯示得分動畫
+                showScorePopup(score, '🎉 答對了！');
+                
+                // 檢查成就
+                checkAchievements(elapsed);
+            } else {
+                gameStats.wrongCount++;
+            }
+            
+            // 更新計分板
+            updateScoreBoard();
+            
+            const resultDiv = document.getElementById('result');
+            if (isCorrect) {
+                // 答對時將所有輸入框變綠色
+                for (let i = 1; i <= 4; i++) {
+                    const answerInput = document.getElementById(`answer${i}`);
+                    answerInput.style.borderColor = '#28a745';
+                    answerInput.style.backgroundColor = '#e6ffe6';
+                }
+                
+                const score = calculateScore(elapsed, true);
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        🎉 恭喜答對了！<br>
+                        ⏱️ 完成時間：${timeString}<br>
+                        💰 獲得分數：${score} 分<br>
+                        🏆 你成功破解了這個鐘面密碼！
+                    </div>
+                `;
+            } else {
+                // 答錯時標示錯誤的位置
+                let correctCount = 0;
+                let errorDetails = [];
+                
+                for (let i = 0; i < 4; i++) {
+                    const answerInput = document.getElementById(`answer${i + 1}`);
+                    if (userAnswers[i] === currentChallenge.correctAnswer[i]) {
+                        answerInput.style.borderColor = '#28a745';
+                        answerInput.style.backgroundColor = '#e6ffe6';
+                        correctCount++;
+                    } else {
+                        answerInput.style.borderColor = '#ff6b6b';
+                        answerInput.style.backgroundColor = '#ffe6e6';
+                        errorDetails.push(`第${i + 1}個答案`);
+                    }
+                }
+                
+                let feedbackMessage = '';
+                if (correctCount > 0) {
+                    feedbackMessage += `🟢 答對了 ${correctCount} 個！<br>`;
+                }
+                if (errorDetails.length > 0) {
+                    feedbackMessage += `🔴 ${errorDetails.join('、')} 需要修正<br>`;
+                }
+                feedbackMessage += `💡 綠色框框是正確的，紅色框框需要重新思考`;
+                
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ 答案還不完全正確！<br>
+                        ⏱️ 用時：${timeString}<br>
+                        ${feedbackMessage}<br>
+                        🔍 正確答案：${currentChallenge.correctAnswer.join(' - ')}<br>
+                        💪 再試一次吧！<br>
+                        🔄 重新播放旋轉動畫幫助你思考...
+                    </div>
+                `;
+                
+                // 答錯時重新播放旋轉動畫
+                setTimeout(() => {
+                    executeRotationAnimation();
+                }, 2000); // 延遲2秒後播放動畫
+            }
+        }
+
+        // 重置挑戰
+        function resetChallenge() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            startTime = null;
+            challengeHourAngle = 0;
+            challengeMinuteAngle = 0;
+            updateClockHands('challenge', challengeHourAngle, challengeMinuteAngle);
+            
+            // 清空答案並重置顏色
+            for (let i = 1; i <= 4; i++) {
+                const answerInput = document.getElementById(`answer${i}`);
+                answerInput.value = '';
+                answerInput.style.borderColor = '#ddd';
+                answerInput.style.backgroundColor = 'white';
+            }
+            
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('timer').textContent = '⏱️ 00:00';
+        }
+
+        // 切換密碼顯示/隱藏
+        function togglePasswordVisibility() {
+            const passwordContainer = document.getElementById('passwordContainer');
+            const passwordHidden = document.getElementById('passwordHidden');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            if (passwordContainer.style.display === 'none') {
+                // 顯示答案
+                passwordContainer.style.display = 'grid';
+                passwordHidden.style.display = 'none';
+                toggleBtn.innerHTML = '👁️ 隱藏答案';
+                toggleBtn.className = 'btn btn-warning';
+            } else {
+                // 隱藏答案
+                passwordContainer.style.display = 'none';
+                passwordHidden.style.display = 'block';
+                toggleBtn.innerHTML = '🔒 答案已隱藏';
+                toggleBtn.className = 'btn btn-success';
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initClockNumbers();
+            updateClockHands('creator', 0, 0);
+            updateClockHands('challenge', 0, 0);
+            updateScoreBoard();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9811ea260603826d',t:'MTc1ODIwOTc0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
