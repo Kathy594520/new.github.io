@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Suno AI 詩歌提示詞產生器 — 櫻花版</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans TC', 'system-ui', 'Segoe UI', 'Arial', 'sans-serif'],
+            serifjp: ['Noto Serif JP', 'serif']
+          },
+          colors: {
+            sakura: {
+              50: '#fff1f5',
+              100: '#ffe4ec',
+              200: '#ffc9d8',
+              300: '#ff9fba',
+              400: '#ff7aa3',
+              500: '#ff5a8a',
+              600: '#e14a7a',
+              700: '#bf3e68',
+              800: '#9e3457',
+              900: '#7c2a46'
+            },
+            ink: {
+              700: '#374151',
+              800: '#1f2937',
+              900: '#111827'
+            }
+          },
+          boxShadow: {
+            soft: '0 10px 30px rgba(190,24,93,0.08), 0 2px 6px rgba(190,24,93,0.06)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 櫻花花瓣背景 + 多層飄落 */
+    .sakura-bg {
+      background: radial-gradient(1200px 600px at -10% -10%, rgba(255,182,193,0.25), transparent 60%),
+                  radial-gradient(1000px 700px at 110% 0%, rgba(255,182,193,0.18), transparent 60%),
+                  linear-gradient(135deg, #fff7fa 0%, #fff1f5 30%, #ffe9f1 60%, #fff7fa 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .petal-layer { position: absolute; inset: 0; pointer-events: none; }
+    .layer-far  { opacity: 0.22; }
+    .layer-mid  { opacity: 0.32; }
+    .layer-near { opacity: 0.42; }
+
+    .petal { 
+      position: absolute; 
+      top: -12vh; 
+      width: var(--size, 24px); 
+      height: var(--size, 24px); 
+      animation: fall var(--fall, 12s) linear forwards; 
+      filter: blur(0.1px);
+    }
+    .petal .inner { 
+      width: 100%; height: 100%; 
+      animation: sway var(--swayDur, 4s) ease-in-out infinite alternate; 
+      will-change: transform; 
+    }
+    .petal .leaf { 
+      display: block; width: 100%; height: 100%; 
+      transform-origin: 50% 50%; 
+      animation: spin var(--spin, 10s) linear infinite; 
+      filter: drop-shadow(0 2px 2px rgba(190, 24, 93, .08));
+    }
+
+    @keyframes fall { 
+      0% { transform: translateY(-12vh); }
+      100% { transform: translateY(110vh); }
+    }
+    @keyframes sway {
+      0%   { transform: translateX(calc(var(--amp, 24px) * -1)); }
+      100% { transform: translateX(var(--amp, 24px)); }
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* 選取用紅框樣式 */
+    .selected-card {
+      background: #fff5f7;
+      border-color: #fb7185 !important;
+      box-shadow: 0 0 0 2px rgba(251,113,133,0.55) inset;
+    }
+  </style>
+</head>
+<body class="min-h-screen sakura-bg font-sans text-ink-800">
+
+  <!-- 背景花瓣（多層 SVG 與動態生成） -->
+  <div class="petal-layer layer-far" id="layerFar"></div>
+  <div class="petal-layer layer-mid" id="layerMid"></div>
+  <div class="petal-layer layer-near" id="layerNear"></div>
+
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12">
+    <!-- Header -->
+    <header class="backdrop-blur-xl bg-white/60 rounded-2xl shadow-soft p-6 md:p-8 border border-white/60">
+      <div class="flex items-start justify-between gap-6 flex-wrap">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-serifjp font-bold tracking-tight flex items-center gap-2">
+            <span class="text-sakura-700">🌸 Suno AI</span>
+            <span>詩歌提示詞產生器</span>
+          </h1>
+          <p class="mt-2 text-ink-700">點選上方卡片（單選）即可加入「我的選擇」，或貼上詩歌文字自動分析，一鍵生成中英雙語提示詞。</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-sakura-50 text-sakura-700 border border-sakura-100">
+            <span>🖱️</span><span>點選選取（單選）</span>
+          </span>
+          <span class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-sakura-100 text-sakura-800 border border-sakura-200">
+            <span>👤</span><span>設計者：仙姑凱西</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Columns -->
+    <section class="mt-6 md:mt-8">
+      <div class="flex items-stretch gap-4 overflow-x-auto pb-3">
+        <!-- 欄位模板 -->
+        <template id="column-template">
+          <div class="min-w-[220px] w-[220px] bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 max-h-[360px] overflow-y-auto border border-white/70">
+            <h3 class="text-sm font-semibold text-ink-800 mb-3 flex items-center justify-between">
+              <span class="category-name"></span>
+              <span class="text-xs text-ink-700/50 select-none">點選加入</span>
+            </h3>
+            <div class="space-y-2 items-container"></div>
+          </div>
+        </template>
+
+        <!-- 卡片模板 -->
+        <template id="item-template">
+          <div class="select-item group rounded-lg border border-ink-800/10 bg-white px-3 py-2 text-sm shadow-sm hover:shadow transition flex items-center justify-between gap-2 cursor-pointer">
+            <div class="min-w-0">
+              <p class="font-medium text-ink-800 leading-5 truncate item-label-zh">—</p>
+              <p class="text-xs text-ink-700/70 leading-4 truncate item-label-en">—</p>
+            </div>
+            <span class="text-ink-700/30 group-hover:text-sakura-600 transition">＋</span>
+          </div>
+        </template>
+
+        <!-- 動態插入 -->
+        <div id="columns" class="flex gap-4"></div>
+      </div>
+    </section>
+
+    <!-- 我的選擇 + 控制 -->
+    <section class="mt-4 md:mt-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- 我的選擇 -->
+        <div class="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
+          <div class="flex items-center justify-between gap-4 mb-3">
+            <h3 class="text-sm font-semibold text-ink-800">我的選擇</h3>
+            <button id="clearSelections" class="text-sm text-ink-700/70 hover:text-ink-800 transition">清空</button>
+          </div>
+
+          <div id="dropzone" class="min-h-[96px] rounded-lg border-2 border-dashed border-sakura-200 bg-white/90 p-3 transition">
+            <p id="dropHint" class="text-sm text-ink-700/50 text-center py-6">
+              點選上方卡片會自動加入此處，或直接從文字自動分析
+            </p>
+            <div id="chosenList" class="flex flex-wrap items-start gap-2"></div>
+          </div>
+
+          <!-- Token 模板 -->
+          <template id="token-template">
+            <div class="token inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sakura-50 border border-sakura-200 text-sakura-800 text-sm">
+              <span class="token-text"></span>
+              <button class="remove-token ml-1 text-sakura-500 hover:text-sakura-700 transition" aria-label="移除">✕</button>
+            </div>
+          </template>
+        </div>
+
+        <!-- 操作按鈕 -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
+          <div class="grid grid-cols-2 gap-3">
+            <button id="generateBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-500 text-white font-semibold shadow hover:bg-sakura-600 transition">
+              <span>🪄</span><span>生成提示詞</span>
+            </button>
+            <button id="generateFromTextBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-300 text-ink-900 font-semibold shadow hover:bg-sakura-400 transition">
+              <span>🔍</span><span>從詩歌文字生成</span>
+            </button>
+            <button id="copyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-600 text-white font-semibold shadow hover:bg-sakura-700 disabled:opacity-40 disabled:cursor-not-allowed transition" disabled>
+              <span>📋</span><span>複製</span>
+            </button>
+            <button id="downloadBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-700 text-white font-semibold shadow hover:bg-sakura-800 disabled:opacity-40 disabled:cursor-not-allowed transition" disabled>
+              <span>⬇️</span><span>下載 .txt</span>
+            </button>
+            <button id="resetBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-ink-900 text-white font-semibold shadow hover:bg-ink-800 transition">
+              <span>🧹</span><span>全部重設</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 輸入與輸出 -->
+    <section class="mt-4 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
+        <label for="poemInput" class="text-sm font-semibold text-ink-800">詩歌文字（可貼上既有歌詞或詩句）</label>
+        <textarea id="poemInput" class="mt-2 w-full h-36 rounded-lg border border-sakura-200 p-3 text-ink-800 placeholder-ink-700/40 focus:outline-none focus:ring-2 focus:ring-sakura-300 bg-white/90"
+          placeholder="例：風把秘密悄悄地帶走，月色灑滿旅人的肩頭……"></textarea>
+        <p class="mt-2 text-xs text-ink-700/60">小提示：不用很長，幾句就能推測情緒與意象。</p>
+      </div>
+
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-semibold text-ink-800">輸出結果</label>
+          <button id="shortenBtn" class="text-sm text-ink-700/70 hover:text-ink-800 transition">精簡/展開</button>
+        </div>
+        <pre id="output" class="mt-2 w-full min-h-[144px] whitespace-pre-wrap rounded-lg border border-sakura-200 p-3 text-ink-900 bg-white/90 overflow-auto"></pre>
+      </div>
+    </section>
+
+    <footer class="mt-8 text-center text-sm text-ink-700/70">
+      本工具僅作為文案靈感輔助，與任何服務無關。祝創作順利！
+    </footer>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-sakura-600 text-white text-sm shadow opacity-0 pointer-events-none transition">
+    已複製到剪貼簿
+  </div>
+
+  <script>
+    // 所有欄位
+    const CATEGORIES = [
+      { key: 'theme', name: '主題 Theme', items: [
+        { zh:'大自然', en:'Nature' },
+        { zh:'童年', en:'Childhood' },
+        { zh:'旅程', en:'Journey' },
+        { zh:'友誼', en:'Friendship' },
+        { zh:'夢想', en:'Dreams' },
+        { zh:'愛情', en:'Love' },
+        { zh:'童話故事', en:'Fairy tale story' },
+      ]},
+      { key: 'topic', name: '題材 Topic', items: [
+        { zh:'四季', en:'Seasons' },
+        { zh:'城市生活', en:'City life' },
+        { zh:'神話傳說', en:'Myth and legend' },
+        { zh:'文化傳承', en:'Cultural heritage' },
+        { zh:'友誼故事', en:'Friendship story' },
+        { zh:'夢想希望', en:'Dreams and hope' },
+      ]},
+      { key: 'type', name: '類型 Type', items: [
+        { zh:'抒情民謠', en:'Ballad' },
+        { zh:'流行歌曲', en:'Pop' },
+        { zh:'搖滾', en:'Rock' },
+        { zh:'嘻哈', en:'Hip-hop' },
+        { zh:'饒舌', en:'Rap' },
+        { zh:'電子音樂', en:'Electronic' },
+      ]},
+      { key: 'mood', name: '情緒 Mood', items: [
+        { zh:'浪漫', en:'Romantic' },
+        { zh:'憂傷', en:'Melancholic' },
+        { zh:'希望', en:'Hopeful' },
+        { zh:'懷舊', en:'Nostalgic' },
+        { zh:'熱血', en:'Energetic' },
+        { zh:'平靜', en:'Calm' },
+      ]},
+      { key: 'language', name: '語言 Language', items: [
+        { zh:'中文', en:'Chinese' },
+        { zh:'英文', en:'English' },
+        { zh:'雙語', en:'Bilingual' },
+      ]},
+      { key: 'imagery', name: '意象 Imagery', items: [
+        { zh:'星空', en:'Stars' },
+        { zh:'海洋', en:'Ocean' },
+        { zh:'森林', en:'Forest' },
+        { zh:'城市夜色', en:'City nights' },
+        { zh:'細雨', en:'Rain' },
+        { zh:'飄雪', en:'Snow' },
+      ]},
+      { key: 'structure', name: '結構 Structure', items: [
+        { zh:'主歌-副歌', en:'Verse-Chorus' },
+        { zh:'AABA', en:'AABA' },
+        { zh:'自由詩', en:'Free verse' },
+        { zh:'俳句', en:'Haiku' },
+        { zh:'十四行詩', en:'Sonnet' },
+      ]},
+      { key: 'rhythm', name: '韻律 Rhythm', items: [
+        { zh:'慢速', en:'Slow tempo' },
+        { zh:'中速', en:'Medium tempo' },
+        { zh:'輕快', en:'Upbeat' },
+        { zh:'華爾滋風格', en:'Waltz-like' },
+        { zh:'進行曲風格', en:'March-like' },
+        { zh:'搖擺節奏', en:'Swing groove' },
+      ]},
+      { key: 'instrument', name: '配器 Instrumentation', items: [
+        { zh:'木吉他', en:'Acoustic guitar' },
+        { zh:'電吉他', en:'Electric guitar' },
+        { zh:'鋼琴', en:'Piano' },
+        { zh:'弦樂', en:'Strings' },
+        { zh:'爵士鼓', en:'Drums' },
+        { zh:'長笛', en:'Flute' },
+        { zh:'豎琴', en:'Harp' },
+        { zh:'中國笛', en:'Chinese bamboo flute' },
+        { zh:'二胡', en:'Erhu' },
+        { zh:'古箏', en:'Guzheng' },
+        { zh:'琵琶', en:'Pipa' },
+        { zh:'笙', en:'Sheng' },
+        { zh:'嗩吶', en:'Suona' },
+        { zh:'交響樂團', en:'Symphony orchestra' },
+        { zh:'合唱團', en:'Choir' },
+        { zh:'世界樂器', en:'World instruments' },
+      ]},
+      { key: 'rhyme', name: '押韻 Rhyme', items: [
+        { zh:'ABAB', en:'ABAB' },
+        { zh:'AABB', en:'AABB' },
+        { zh:'ABCB', en:'ABCB' },
+        { zh:'自由押韻', en:'Free rhyme' },
+      ]},
+      { key: 'keywords', name: '關鍵詞 Keywords', items: [
+        { zh:'療癒', en:'healing' },
+        { zh:'成長', en:'growth' },
+        { zh:'回家', en:'home' },
+        { zh:'風', en:'wind' },
+        { zh:'月光', en:'moonlight' },
+      ]},
+    ];
+
+    // 狀態
+    let selected = []; // 單選：每 key 最多 1
+    let uid = 0;
+    let compactMode = false;
+
+    // DOM
+    const columnsWrap = document.getElementById('columns');
+    const columnTpl = document.getElementById('column-template');
+    const itemTpl = document.getElementById('item-template');
+    const tokenTpl = document.getElementById('token-template');
+    const chosenList = document.getElementById('chosenList');
+    const dropHint = document.getElementById('dropHint');
+
+    const generateBtn = document.getElementById('generateBtn');
+    const generateFromTextBtn = document.getElementById('generateFromTextBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const clearSelectionsBtn = document.getElementById('clearSelections');
+    const shortenBtn = document.getElementById('shortenBtn');
+
+    const poemInput = document.getElementById('poemInput');
+    const output = document.getElementById('output');
+    const toast = document.getElementById('toast');
+
+    // 小工具：切換紅框樣式
+    function setCardSelected(el, on) {
+      if (!el) return;
+      el.classList.toggle('selected-card', !!on);
+    }
+
+    // 初始化欄位
+    function initColumns() {
+      columnsWrap.innerHTML = '';
+      CATEGORIES.forEach(cat => {
+        const col = columnTpl.content.firstElementChild.cloneNode(true);
+        col.querySelector('.category-name').textContent = cat.name;
+        const container = col.querySelector('.items-container');
+
+        cat.items.forEach(opt => {
+          const item = itemTpl.content.firstElementChild.cloneNode(true);
+          item.dataset.key = cat.key;
+          item.dataset.zh = opt.zh;
+          item.dataset.en = opt.en;
+          item.querySelector('.item-label-zh').textContent = opt.zh;
+          item.querySelector('.item-label-en').textContent = opt.en;
+
+          // 點選：單選切換
+          item.addEventListener('click', () => toggleSingleSelection({ key: cat.key, zh: opt.zh, en: opt.en }, item));
+
+          container.appendChild(item);
+        });
+
+        columnsWrap.appendChild(col);
+      });
+    }
+
+    // 單選切換
+    function toggleSingleSelection(data, itemEl) {
+      // 是否原本就選這張
+      const wasSelected = selected.some(s => s.key === data.key && s.zh === data.zh && s.en === data.en);
+
+      // 先清除同分類已選
+      selected = selected.filter(s => s.key !== data.key);
+      document.querySelectorAll(`.select-item[data-key="${data.key}"]`).forEach(el => setCardSelected(el, false));
+
+      if (!wasSelected) {
+        // 加入新選擇並紅框
+        selected.push({ id: `t_${uid++}`, ...data });
+        setCardSelected(itemEl, true);
+      }
+
+      renderTokens();
+    }
+
+    // 渲染選擇 token
+    function renderTokens() {
+      chosenList.innerHTML = '';
+      if (selected.length === 0) {
+        dropHint.classList.remove('hidden');
+      } else {
+        dropHint.classList.add('hidden');
+      }
+
+      selected.forEach(s => {
+        const token = tokenTpl.content.firstElementChild.cloneNode(true);
+        token.dataset.id = s.id;
+        token.dataset.key = s.key;
+        token.querySelector('.token-text').textContent = `${s.zh} / ${s.en}`;
+        token.querySelector('.remove-token').addEventListener('click', () => {
+          // 移除並同步取消紅框
+          selected = selected.filter(x => x.id !== s.id);
+          const el = document.querySelector(`.select-item[data-key="${s.key}"][data-zh="${s.zh}"][data-en="${s.en}"]`);
+          setCardSelected(el, false);
+          renderTokens();
+        });
+        chosenList.appendChild(token);
+      });
+    }
+
+    // 生成提示詞
+    function buildPrompt() {
+      if (selected.length === 0) return '請先點選幾個上方選項加入「我的選擇」，或使用「從詩歌文字生成」。';
+
+      const byKey = (k) => selected.filter(s => s.key === k);
+      const listZh = k => byKey(k).map(s => s.zh).join('、');
+      const listEn = k => byKey(k).map(s => s.en).join(', ');
+
+      const enParts = [];
+      const zhParts = [];
+
+      if (byKey('theme').length) { enParts.push(`Theme: ${listEn('theme')}`); zhParts.push(`主題：${listZh('theme')}`); }
+      if (byKey('topic').length) { enParts.push(`Topic: ${listEn('topic')}`); zhParts.push(`題材：${listZh('topic')}`); }
+      if (byKey('type').length) { enParts.push(`Style: ${listEn('type')}`); zhParts.push(`類型：${listZh('type')}`); }
+      if (byKey('mood').length) { enParts.push(`Mood: ${listEn('mood')}`); zhParts.push(`情緒：${listZh('mood')}`); }
+      if (byKey('language').length) { enParts.push(`Language: ${listEn('language')}`); zhParts.push(`語言：${listZh('language')}`); }
+      if (byKey('imagery').length) { enParts.push(`Imagery: ${listEn('imagery')}`); zhParts.push(`意象：${listZh('imagery')}`); }
+      if (byKey('structure').length) { enParts.push(`Structure: ${listEn('structure')}`); zhParts.push(`結構：${listZh('structure')}`); }
+      if (byKey('rhythm').length) { enParts.push(`Rhythm: ${listEn('rhythm')}`); zhParts.push(`韻律：${listZh('rhythm')}`); }
+      if (byKey('instrument').length) { enParts.push(`Instrumentation: ${listEn('instrument')}`); zhParts.push(`配器：${listZh('instrument')}`); }
+      if (byKey('rhyme').length) { enParts.push(`Rhyme: ${listEn('rhyme')}`); zhParts.push(`押韻：${listZh('rhyme')}`); }
+      if (byKey('keywords').length) { enParts.push(`Keywords: ${listEn('keywords')}`); zhParts.push(`關鍵詞：${listZh('keywords')}`); }
+
+      const enLine = enParts.join(' | ');
+      const zhLine = zhParts.join('｜');
+
+      const summaryEN = [
+        byKey('mood').length ? `${listEn('mood')} tone` : '',
+        byKey('type').length ? `${listEn('type').toLowerCase()} vibe` : '',
+        byKey('imagery').length ? `evoke ${listEn('imagery').toLowerCase()}` : '',
+        byKey('rhythm').length ? `${listEn('rhythm').toLowerCase()} feel` : '',
+        byKey('topic').length ? `topic: ${listEn('topic').toLowerCase()}` : '',
+        byKey('theme').length ? `about ${listEn('theme').toLowerCase()}` : ''
+      ].filter(Boolean).join(', ');
+
+      const summaryZH = [
+        byKey('mood').length ? `${listZh('mood')}氛圍` : '',
+        byKey('type').length ? `${listZh('type')}風格` : '',
+        byKey('imagery').length ? `帶出${listZh('imagery')}意象` : '',
+        byKey('rhythm').length ? `${listZh('rhythm')}律動` : '',
+        byKey('topic').length ? `題材為${listZh('topic')}` : '',
+        byKey('theme').length ? `圍繞${listZh('theme')}` : ''
+      ].filter(Boolean).join('、');
+
+      const lines = [
+        'Suno AI Lyric/Poem Prompt',
+        '',
+        `English: ${summaryEN || 'A vivid, emotionally resonant piece'}. ${enLine}`,
+        `中文：${summaryZH || '生動、富有情感共鳴的作品'}。${zhLine}`,
+        '',
+        'Tips:',
+        '- Keep lines concise and imagery-rich.',
+        '- Use simple, concrete nouns and verbs.',
+        '- Avoid overly abstract wording.'
+      ];
+
+      return lines.join('\n');
+    }
+
+    // 分析文字（簡易）
+    function analyzeFromText(text) {
+      const t = (text || '').trim();
+      if (!t) return '請貼上幾句文字再試試。';
+
+      // 重置（單選模式）
+      clearAllSelections();
+
+      const dict = {
+        mood: [
+          { kw: ['愛','溫柔','擁抱','心動','甜蜜'], zh:'浪漫', en:'Romantic' },
+          { kw: ['哭','孤單','黑夜','傷','離別','泣'], zh:'憂傷', en:'Melancholic' },
+          { kw: ['希望','光','明天','陽光','重生','勇氣'], zh:'希望', en:'Hopeful' },
+          { kw: ['回憶','老街','從前','童年','照片'], zh:'懷舊', en:'Nostalgic' },
+          { kw: ['奔跑','烈火','熱血','衝','吶喊'], zh:'熱血', en:'Energetic' },
+          { kw: ['靜','湖','微風','夜','雪','雨'], zh:'平靜', en:'Calm' },
+        ],
+        theme: [
+          { kw: ['山','海','風','樹','森林','月','星'], zh:'大自然', en:'Nature' },
+          { kw: ['童年','孩子','操場','課本'], zh:'童年', en:'Childhood' },
+          { kw: ['旅程','遠方','出發','路','漂泊'], zh:'旅程', en:'Journey' },
+          { kw: ['朋友','兄弟','姐妹','夥伴'], zh:'友誼', en:'Friendship' },
+          { kw: ['夢','願望','追尋','未來'], zh:'夢想', en:'Dreams' },
+          { kw: ['戀','心動','相遇','牽手'], zh:'愛情', en:'Love' },
+        ],
+        imagery: [
+          { kw: ['星','星空','銀河'], zh:'星空', en:'Stars' },
+          { kw: ['海','波浪','潮汐'], zh:'海洋', en:'Ocean' },
+          { kw: ['林','樹','葉','鳥'], zh:'森林', en:'Forest' },
+          { kw: ['夜','霓虹','街燈','城市'], zh:'城市夜色', en:'City nights' },
+          { kw: ['雨','雨滴','雲'], zh:'細雨', en:'Rain' },
+          { kw: ['雪','白','冬'], zh:'飄雪', en:'Snow' },
+        ],
+        type: [
+          { kw: ['搖滾','電吉他','吶喊'], zh:'搖滾', en:'Rock' },
+          { kw: ['流行','旋律','輕快'], zh:'流行歌曲', en:'Pop' },
+          { kw: ['饒舌','rap','押韻'], zh:'饒舌', en:'Rap' },
+          { kw: ['電子','合成器','節拍'], zh:'電子音樂', en:'Electronic' },
+          { kw: ['民謠','木吉他'], zh:'抒情民謠', en:'Ballad' },
+        ]
+      };
+
+      // 每類挑第一個命中的詞
+      Object.entries(dict).forEach(([key, arr]) => {
+        const hit = arr.find(rule => rule.kw.some(w => t.includes(w)));
+        if (hit) {
+          // 找到對應卡片 DOM，套用單選
+          const card = document.querySelector(`.select-item[data-key="${key}"][data-zh="${hit.zh}"][data-en="${hit.en}"]`);
+          toggleSingleSelection({ key, zh: hit.zh, en: hit.en }, card || null);
+        }
+      });
+
+      // 補齊常用
+      if (!selected.some(s => s.key === 'language')) {
+        const card = document.querySelector(`.select-item[data-key="language"][data-zh="雙語"]`);
+        toggleSingleSelection({ key:'language', zh:'雙語', en:'Bilingual' }, card || null);
+      }
+      if (!selected.some(s => s.key === 'structure')) {
+        const card = document.querySelector(`.select-item[data-key="structure"][data-zh="主歌-副歌"]`);
+        toggleSingleSelection({ key:'structure', zh:'主歌-副歌', en:'Verse-Chorus' }, card || null);
+      }
+      if (!selected.some(s => s.key === 'type')) {
+        const card = document.querySelector(`.select-item[data-key="type"][data-zh="流行歌曲"]`);
+        toggleSingleSelection({ key:'type', zh:'流行歌曲', en:'Pop' }, card || null);
+      }
+
+      return buildPrompt();
+    }
+
+    // 操作區
+    function updateActionsState() {
+      const hasText = output.textContent.trim().length > 0;
+      copyBtn.disabled = !hasText;
+      downloadBtn.disabled = !hasText;
+    }
+
+    function showToast(msg = '已完成') {
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      toast.style.pointerEvents = 'auto';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.pointerEvents = 'none';
+      }, 1400);
+    }
+
+    function clearAllSelections() {
+      selected = [];
+      // 取消所有紅框
+      document.querySelectorAll('.select-item').forEach(el => setCardSelected(el, false));
+      renderTokens();
+    }
+
+    generateBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const txt = buildPrompt();
+      output.textContent = txt;
+      updateActionsState();
+    });
+
+    generateFromTextBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const txt = analyzeFromText(poemInput.value || '');
+      output.textContent = txt;
+      updateActionsState();
+    });
+
+    copyBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const txt = output.textContent;
+      try {
+        await navigator.clipboard.writeText(txt);
+        showToast('已複製到剪貼簿');
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('已複製到剪貼簿');
+      }
+    });
+
+    downloadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const blob = new Blob([output.textContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'suno-prompt.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('已下載 .txt');
+    });
+
+    resetBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      poemInput.value = '';
+      output.textContent = '';
+      clearAllSelections();
+      updateActionsState();
+      showToast('已重設');
+    });
+
+    clearSelectionsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      clearAllSelections();
+      showToast('已清空');
+    });
+
+    shortenBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      compactMode = !compactMode;
+      shortenBtn.textContent = compactMode ? '展開' : '精簡/展開';
+      if (!output.textContent.trim()) return;
+      const full = output.textContent;
+      if (compactMode) {
+        const lines = full.split('\n');
+        const kept = lines.filter(l => /^English:|^中文：/.test(l) || l.startsWith('Suno AI')).join('\n');
+        output.textContent = kept || full;
+      } else {
+        output.textContent = buildPrompt();
+      }
+    });
+
+    poemInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const txt = analyzeFromText(poemInput.value || '');
+        output.textContent = txt;
+        updateActionsState();
+      }
+    });
+
+    // 啟動
+    initColumns();
+    renderTokens();
+    updateActionsState();
+
+    // 櫻花飄落：多層生成
+    const FAR = document.getElementById('layerFar');
+    const MID = document.getElementById('layerMid');
+    const NEAR = document.getElementById('layerNear');
+
+    function makePetal(color) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 24 24');
+      svg.setAttribute('fill','none');
+      svg.classList.add('petal');
+
+      // 隨機屬性
+      const size = Math.random()*14 + 14; // 14~28
+      const fall = Math.random()*10 + 10; // 10~20s
+      const swayDur = Math.random()*3 + 3; // 3~6s
+      const spinDur = Math.random()*8 + 8; // 8~16s
+      const amp = Math.random()*30 + 16; // 16~46px
+      const left = Math.random()*100; // vw
+      const delay = Math.random()*6; // s
+
+      svg.style.left = left + 'vw';
+      svg.style.setProperty('--size', size + 'px');
+      svg.style.setProperty('--fall', fall + 's');
+      svg.style.setProperty('--swayDur', swayDur + 's');
+      svg.style.setProperty('--spin', spinDur + 's');
+      svg.style.setProperty('--amp', amp + 'px');
+      svg.style.animationDelay = delay + 's';
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('class','inner');
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('class','leaf');
+      path.setAttribute('d','M12 2c3 4 6 6 6 9a6 6 0 1 1-12 0c0-3 3-5 6-9Z');
+      path.setAttribute('fill', color);
+      g.appendChild(path);
+      svg.appendChild(g);
+      return svg;
+    }
+
+    function seedLayer(layer, count, palette) {
+      for (let i=0;i<count;i++) {
+        const color = palette[Math.floor(Math.random()*palette.length)];
+        layer.appendChild(makePetal(color));
+      }
+      // 持續生成
+      setInterval(()=>{
+        const color = palette[Math.floor(Math.random()*palette.length)];
+        const p = makePetal(color);
+        layer.appendChild(p);
+        // 清理離場元素
+        setTimeout(()=>{ p.remove(); }, 24000);
+      }, 1200);
+    }
+
+    seedLayer(FAR, 12, ['#ffe4e6','#fecdd3']);
+    seedLayer(MID, 10, ['#fecdd3','#fda4af']);
+    seedLayer(NEAR, 8, ['#fda4af','#fb7185']);
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981a529f429c4a85',t:'MTc1ODI5NzkwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
