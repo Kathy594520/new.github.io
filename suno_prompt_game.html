@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Suno AI 詩歌提示詞產生器 — 櫻花版</title>
+  <title>Suno AI 詩歌提示詞產生器 — 櫻花版（主題保存）</title>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
@@ -46,16 +46,15 @@
   </script>
 
   <style>
-    /* 櫻花花瓣背景 + 多層飄落 */
+    /* 櫻花花瓣背景 + 多層飄落（不再限制滾動） */
     .sakura-bg {
       background: radial-gradient(1200px 600px at -10% -10%, rgba(255,182,193,0.25), transparent 60%),
                   radial-gradient(1000px 700px at 110% 0%, rgba(255,182,193,0.18), transparent 60%),
                   linear-gradient(135deg, #fff7fa 0%, #fff1f5 30%, #ffe9f1 60%, #fff7fa 100%);
       position: relative;
-      overflow: hidden;
     }
 
-    .petal-layer { position: absolute; inset: 0; pointer-events: none; }
+    .petal-layer { position: fixed; inset: 0; pointer-events: none; }
     .layer-far  { opacity: 0.22; }
     .layer-mid  { opacity: 0.32; }
     .layer-near { opacity: 0.42; }
@@ -98,41 +97,43 @@
     }
   </style>
 </head>
-<body class="min-h-screen sakura-bg font-sans text-ink-800">
+<body class="min-h-screen sakura-bg font-sans text-ink-800 text-[18px] md:text-[19px] leading-relaxed overflow-x-hidden">
 
-  <!-- 背景花瓣（多層 SVG 與動態生成） -->
+  <!-- 背景花瓣（多層，固定於視窗；內容可下滑） -->
   <div class="petal-layer layer-far" id="layerFar"></div>
   <div class="petal-layer layer-mid" id="layerMid"></div>
   <div class="petal-layer layer-near" id="layerNear"></div>
 
-  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-10 md:py-14">
     <!-- Header -->
     <header class="backdrop-blur-xl bg-white/60 rounded-2xl shadow-soft p-6 md:p-8 border border-white/60">
       <div class="flex items-start justify-between gap-6 flex-wrap">
         <div>
-          <h1 class="text-2xl md:text-3xl font-serifjp font-bold tracking-tight flex items-center gap-2">
+          <h1 class="text-3xl md:text-4xl font-serifjp font-bold tracking-tight flex items-center gap-2">
             <span class="text-sakura-700">🌸 Suno AI</span>
             <span>詩歌提示詞產生器</span>
           </h1>
           <p class="mt-2 text-ink-700">點選上方卡片（單選）即可加入「我的選擇」，或貼上詩歌文字自動分析，一鍵生成中英雙語提示詞。</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <span class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-sakura-50 text-sakura-700 border border-sakura-100">
             <span>🖱️</span><span>點選選取（單選）</span>
           </span>
           <span class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-sakura-100 text-sakura-800 border border-sakura-200">
             <span>👤</span><span>設計者：仙姑凱西</span>
           </span>
+
+
         </div>
       </div>
     </header>
 
     <!-- Columns -->
-    <section class="mt-6 md:mt-8">
+    <section class="mt-8 md:mt-12">
       <div class="flex items-stretch gap-4 overflow-x-auto pb-3">
         <!-- 欄位模板 -->
         <template id="column-template">
-          <div class="min-w-[220px] w-[220px] bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 max-h-[360px] overflow-y-auto border border-white/70">
+          <div class="min-w-[230px] w-[230px] bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 max-h-[380px] overflow-y-auto border border-white/70">
             <h3 class="text-sm font-semibold text-ink-800 mb-3 flex items-center justify-between">
               <span class="category-name"></span>
               <span class="text-xs text-ink-700/50 select-none">點選加入</span>
@@ -143,7 +144,7 @@
 
         <!-- 卡片模板 -->
         <template id="item-template">
-          <div class="select-item group rounded-lg border border-ink-800/10 bg-white px-3 py-2 text-sm shadow-sm hover:shadow transition flex items-center justify-between gap-2 cursor-pointer">
+          <div class="select-item group rounded-lg border border-ink-800/10 bg-white px-3.5 py-2.5 text-[16px] shadow-sm hover:shadow transition flex items-center justify-between gap-2 cursor-pointer">
             <div class="min-w-0">
               <p class="font-medium text-ink-800 leading-5 truncate item-label-zh">—</p>
               <p class="text-xs text-ink-700/70 leading-4 truncate item-label-en">—</p>
@@ -158,7 +159,7 @@
     </section>
 
     <!-- 我的選擇 + 控制 -->
-    <section class="mt-4 md:mt-6">
+    <section class="mt-8 md:mt-12">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- 我的選擇 -->
         <div class="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
@@ -167,7 +168,7 @@
             <button id="clearSelections" class="text-sm text-ink-700/70 hover:text-ink-800 transition">清空</button>
           </div>
 
-          <div id="dropzone" class="min-h-[96px] rounded-lg border-2 border-dashed border-sakura-200 bg-white/90 p-3 transition">
+          <div id="dropzone" class="min-h-[110px] rounded-lg border-2 border-dashed border-sakura-200 bg-white/90 p-3 transition">
             <p id="dropHint" class="text-sm text-ink-700/50 text-center py-6">
               點選上方卡片會自動加入此處，或直接從文字自動分析
             </p>
@@ -186,10 +187,10 @@
         <!-- 操作按鈕 -->
         <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
           <div class="grid grid-cols-2 gap-3">
-            <button id="generateBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-500 text-white font-semibold shadow hover:bg-sakura-600 transition">
+            <button id="generateBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-sakura-500 text-white font-semibold shadow hover:bg-sakura-600 transition">
               <span>🪄</span><span>生成提示詞</span>
             </button>
-            <button id="generateFromTextBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-300 text-ink-900 font-semibold shadow hover:bg-sakura-400 transition">
+            <button id="generateFromTextBtn" class="col-span-2 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-sakura-300 text-ink-900 font-semibold shadow hover:bg-sakura-400 transition">
               <span>🔍</span><span>從詩歌文字生成</span>
             </button>
             <button id="copyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sakura-600 text-white font-semibold shadow hover:bg-sakura-700 disabled:opacity-40 disabled:cursor-not-allowed transition" disabled>
@@ -207,24 +208,32 @@
     </section>
 
     <!-- 輸入與輸出 -->
-    <section class="mt-4 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
+    <section class="mt-8 md:mt-12 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-5 border border-white/70">
         <label for="poemInput" class="text-sm font-semibold text-ink-800">詩歌文字（可貼上既有歌詞或詩句）</label>
-        <textarea id="poemInput" class="mt-2 w-full h-36 rounded-lg border border-sakura-200 p-3 text-ink-800 placeholder-ink-700/40 focus:outline-none focus:ring-2 focus:ring-sakura-300 bg-white/90"
+        <textarea id="poemInput" class="mt-2 w-full h-44 rounded-lg border border-sakura-200 p-3.5 text-[16px] text-ink-800 placeholder-ink-700/40 focus:outline-none focus:ring-2 focus:ring-sakura-300 bg-white/90"
           placeholder="例：風把秘密悄悄地帶走，月色灑滿旅人的肩頭……"></textarea>
         <p class="mt-2 text-xs text-ink-700/60">小提示：不用很長，幾句就能推測情緒與意象。</p>
       </div>
 
-      <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-4 border border-white/70">
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-soft p-5 border border-white/70">
         <div class="flex items-center justify-between">
           <label class="text-sm font-semibold text-ink-800">輸出結果</label>
           <button id="shortenBtn" class="text-sm text-ink-700/70 hover:text-ink-800 transition">精簡/展開</button>
         </div>
-        <pre id="output" class="mt-2 w-full min-h-[144px] whitespace-pre-wrap rounded-lg border border-sakura-200 p-3 text-ink-900 bg-white/90 overflow-auto"></pre>
+        <pre id="output" class="mt-2 w-full min-h-[180px] whitespace-pre-wrap rounded-lg border border-sakura-200 p-3.5 text-[16px] text-ink-900 bg-white/90 overflow-auto"></pre>
       </div>
     </section>
 
-    <footer class="mt-8 text-center text-sm text-ink-700/70">
+    <!-- 舒適的下滑結尾段，確保可滾動 -->
+    <section class="mt-12 md:mt-16">
+      <div class="bg-white/60 border border-white/70 rounded-2xl shadow-soft p-6">
+        <h2 class="text-xl md:text-2xl font-serifjp text-sakura-700 mb-2">創作小提醒</h2>
+        <p class="text-ink-700/90">先從「主題」「情緒」「韻律」各挑一個開始，生成後再微調配器或意象，能更快找到方向。</p>
+      </div>
+    </section>
+
+    <footer class="mt-14 text-center text-sm text-ink-700/70">
       本工具僅作為文案靈感輔助，與任何服務無關。祝創作順利！
     </footer>
   </main>
@@ -536,7 +545,6 @@
       Object.entries(dict).forEach(([key, arr]) => {
         const hit = arr.find(rule => rule.kw.some(w => t.includes(w)));
         if (hit) {
-          // 找到對應卡片 DOM，套用單選
           const card = document.querySelector(`.select-item[data-key="${key}"][data-zh="${hit.zh}"][data-en="${hit.en}"]`);
           toggleSingleSelection({ key, zh: hit.zh, en: hit.en }, card || null);
         }
@@ -578,7 +586,6 @@
 
     function clearAllSelections() {
       selected = [];
-      // 取消所有紅框
       document.querySelectorAll('.select-item').forEach(el => setCardSelected(el, false));
       renderTokens();
     }
@@ -605,11 +612,7 @@
         showToast('已複製到剪貼簿');
       } catch {
         const ta = document.createElement('textarea');
-        ta.value = txt;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
+        ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
         showToast('已複製到剪貼簿');
       }
     });
@@ -672,7 +675,7 @@
     renderTokens();
     updateActionsState();
 
-    // 櫻花飄落：多層生成
+    // 櫻花飄落：多層生成（固定於視窗）
     const FAR = document.getElementById('layerFar');
     const MID = document.getElementById('layerMid');
     const NEAR = document.getElementById('layerNear');
@@ -683,7 +686,6 @@
       svg.setAttribute('fill','none');
       svg.classList.add('petal');
 
-      // 隨機屬性
       const size = Math.random()*14 + 14; // 14~28
       const fall = Math.random()*10 + 10; // 10~20s
       const swayDur = Math.random()*3 + 3; // 3~6s
@@ -716,12 +718,10 @@
         const color = palette[Math.floor(Math.random()*palette.length)];
         layer.appendChild(makePetal(color));
       }
-      // 持續生成
       setInterval(()=>{
         const color = palette[Math.floor(Math.random()*palette.length)];
         const p = makePetal(color);
         layer.appendChild(p);
-        // 清理離場元素
         setTimeout(()=>{ p.remove(); }, 24000);
       }, 1200);
     }
@@ -729,6 +729,8 @@
     seedLayer(FAR, 12, ['#ffe4e6','#fecdd3']);
     seedLayer(MID, 10, ['#fecdd3','#fda4af']);
     seedLayer(NEAR, 8, ['#fda4af','#fb7185']);
+
+
   </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981a529f429c4a85',t:'MTc1ODI5NzkwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981a759c20004a8a',t:'MTc1ODI5OTM0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
