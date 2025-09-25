@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>互動角度練習｜量角器與拖拉線段</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'ui-sans-serif', 'system-ui', 'apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
+          },
+          boxShadow: {
+            glow: '0 10px 30px rgba(0,0,0,0.25)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    .card-float { animation: cardFloat 10s ease-in-out infinite; }
+    @keyframes cardFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+    .celebrate {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      opacity: 0.9;
+      animation: fall 900ms ease-out forwards;
+      will-change: transform, opacity;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(60px) rotate(240deg); opacity: 0; }
+    }
+    .no-select { user-select: none; }
+    html { scroll-behavior: smooth; }
+
+    /* Score +1 bubble */
+    .pop-bubble {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%) scale(0.6);
+      background: rgba(245,158,11,0.95);
+      color: #1f2937;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      opacity: 0;
+      animation: bubbleUp 700ms ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes bubbleUp {
+      0% { opacity: 0; transform: translateY(-50%) scale(0.6); }
+      25% { opacity: 1; transform: translateY(-62%) scale(1); }
+      100% { opacity: 0; transform: translateY(-120%) scale(0.9); }
+    }
+
+    /* 閃爍提示 */
+    .flash-hint { animation: flashPulse 1s ease-in-out infinite; }
+    @keyframes flashPulse {
+      0% { box-shadow: 0 0 0 0 rgba(245,158,11,0.6); }
+      50% { box-shadow: 0 0 0 10px rgba(245,158,11,0); }
+      100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-[#3a2a22] via-[#2a1d16] to-[#1b1411] text-white font-sans">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+    <header class="mb-6">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight">互動角度練習</h1>
+      <p class="text-white/90 mt-2">拖拉兩條線段調整角度，移動／旋轉量角器量度角度。可使用「目標角度」出題與倒數計時；答對會加分並提升關卡。</p>
+    </header>
+
+    <main class="grid lg:grid-cols-5 gap-6">
+      <!-- 左側：互動畫布 -->
+      <section class="lg:col-span-3">
+        <div class="bg-[#2b211b]/70 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-glow card-float ring-1 ring-white/5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+              <span class="text-sm text-white/80">畫布：拖曳端點改變角度；量角器可移動與旋轉，並可切換顯示上半圈。</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="inline-flex items-center gap-2 text-sm text-white/80">
+                <input id="topToggle" type="checkbox" class="w-4 h-4 accent-amber-500">
+                <span>顯示上半圈</span>
+              </label>
+              <button id="resetBtn" class="text-sm bg-amber-500/80 hover:bg-amber-400 active:bg-amber-600 transition-colors px-3 py-1.5 rounded-lg text-stone-900">重設</button>
+            </div>
+          </div>
+
+          <!-- SVG 互動區 -->
+          <div class="relative">
+            <svg id="board" viewBox="0 0 760 480" class="w-full h-[420px] md:h-[460px] rounded-xl bg-gradient-to-b from-white/5 to-white/0 ring-1 ring-white/10">
+              <!-- 柔和網格背景 -->
+              <defs>
+                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(245,158,11,0.08)" stroke-width="1"/>
+                </pattern>
+                <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(245,158,11,0.25)"/>
+                  <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+                </radialGradient>
+              </defs>
+              <rect x="0" y="0" width="100%" height="100%" fill="url(#grid)"></rect>
+              <circle id="centerGlow" cx="380" cy="245" r="100" fill="url(#glow)" opacity="0.4"></circle>
+
+              <!-- 角度扇形（在底層） -->
+              <path id="angleSector" d="" fill="rgba(217,119,6,0.28)" stroke="rgba(255,255,255,0.4)" stroke-width="1"></path>
+
+              <!-- 兩條線段 -->
+              <line id="rayA" x1="380" y1="245" x2="560" y2="245" stroke="white" stroke-width="4" stroke-linecap="round" />
+              <line id="rayB" x1="380" y1="245" x2="260" y2="115" stroke="white" stroke-width="4" stroke-linecap="round" />
+
+              <!-- 頂點 -->
+              <circle id="vertex" cx="380" cy="245" r="6" fill="#fbbf24" stroke="white" stroke-width="2"></circle>
+              <text x="388" y="237" font-size="12" fill="white" opacity="0.9">頂點</text>
+
+              <!-- 量角器（可拖拉／旋轉） -->
+              <g id="protractor" transform="translate(380, 245) rotate(0)" class="cursor-move">
+                <!-- 下半圈半透明本體（預設顯示：0°→180°，朝下） -->
+                <path id="protractorBody" fill="rgba(0,0,0,0.18)" stroke="rgba(255,255,255,0.25)" stroke-width="1"></path>
+                <!-- 上半圈本體（可開關：180°→360°，朝上） -->
+                <path id="protractorBodyTop" fill="rgba(0,0,0,0.14)" stroke="rgba(255,255,255,0.22)" stroke-width="1" style="display:none"></path>
+
+                <!-- 刻度（5°） -->
+                <g id="ticks"></g>
+                <g id="ticksTop" style="display:none"></g>
+
+                <!-- 中心點 -->
+                <circle cx="0" cy="0" r="3" fill="#fbbf24" stroke="white" stroke-width="1"></circle>
+
+                <!-- 旋轉手把 -->
+                <g id="rotateHandle" transform="translate(150,0)">
+                  <circle r="10" fill="#f97316" stroke="white" stroke-width="2" class="cursor-pointer"></circle>
+                  <path d="M -6 -2 L 0 -8 L 6 -2" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </g>
+              </g>
+
+              <!-- 拖拉手把（最上層） -->
+              <g id="handles">
+                <circle id="handleA" r="10" cx="560" cy="245" fill="#b45309" stroke="white" stroke-width="3" class="cursor-pointer"></circle>
+                <circle id="handleB" r="10" cx="260" cy="115" fill="#eab308" stroke="white" stroke-width="3" class="cursor-pointer"></circle>
+              </g>
+            </svg>
+          </div>
+
+          <p class="text-sm text-white/80 mt-3 no-select bg-black/10 rounded-lg px-3 py-2">
+            小提示：把量角器的中心對準「頂點」，讓底邊沿著其中一條線段，再旋轉去量測內角。可勾選「顯示上半圈」變成整圈幫助對齊。
+          </p>
+        </div>
+      </section>
+
+      <!-- 右側：輸入與控制 -->
+      <aside class="lg:col-span-2 space-y-6">
+        <div class="bg-[#2b211b]/70 backdrop-blur-xl rounded-2xl p-5 shadow-glow ring-1 ring-white/5">
+          <h2 class="text-xl font-semibold mb-3">輸入你量到的角度</h2>
+
+          <!-- 遊戲模式切換：自由量測 vs 目標角度 -->
+          <div class="mb-3">
+            <span class="block text-sm mb-1">遊戲模式</span>
+            <div class="inline-flex rounded-lg overflow-hidden ring-1 ring-white/10">
+              <button id="modeFreeBtn" type="button" class="px-3 py-1.5 rounded-none bg-amber-500/30 text-amber-100 font-medium">自由量測</button>
+              <button id="modeTargetBtn" type="button" class="px-3 py-1.5 rounded-none bg-black/20 text-white/80">目標角度</button>
+              <span id="targetHint" class="ml-2 text-xs text-amber-200 hidden">點我切換到目標模式，並按下「產生目標角度」開始！</span>
+            </div>
+            <p class="text-xs text-white/70 mt-2">自由量測：輸入可有 ±2° 誤差並限角度加分一次。目標模式：無需輸入，拖拉線段並以出題角度為準。</p>
+          </div>
+
+          <form id="answerForm" class="space-y-3">
+            <div id="freeInputRow">
+              <label for="angleInput" class="block text-sm mb-1">角度（度數，0–180）</label>
+              <input id="angleInput" type="number" inputmode="numeric" min="0" max="180" step="1"
+                     class="w-full px-4 py-3 rounded-xl bg-black/20 text-white placeholder-white/60 ring-1 ring-white/10 focus:ring-2 focus:ring-amber-400 outline-none"
+                     placeholder="例如：45" />
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="submit" class="bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-stone-900 font-semibold px-4 py-2 rounded-xl transition-colors">
+                確認答案
+              </button>
+              <button id="clearRecordBtn" type="button" class="bg-black/30 hover:bg-black/40 text-white/90 font-medium px-3 py-2 rounded-xl ring-1 ring-white/10">
+                清空紀錄
+              </button>
+
+              <span id="feedback" class="text-sm"></span>
+            </div>
+            <p class="text-xs text-white/80">自由量測允許 ±2° 誤差且同一角度限加分一次；目標模式無需輸入，請拖拉線段並按「確認答案」。</p>
+          </form>
+        </div>
+
+        <div class="bg-[#2b211b]/70 backdrop-blur-xl rounded-2xl p-5 shadow-glow ring-1 ring-white/5">
+          <h2 class="text-xl font-semibold mb-3">目標角度與計時</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
+              <div class="flex items-center gap-3">
+                <button id="newTargetBtn" class="bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-stone-900 font-semibold px-3 py-2 rounded-xl">產生目標角度</button>
+                <span class="text-sm">目標：<span id="targetDisplay" class="font-bold">—</span>°</span>
+              </div>
+            </div>
+            <div class="col-span-2 flex items-center gap-3">
+              <button id="startTimerBtn" class="bg-amber-500/80 hover:bg-amber-400 active:bg-amber-600 text-stone-900 font-semibold px-3 py-2 rounded-xl">開始計時</button>
+              <button id="stopTimerBtn" class="bg-rose-300 hover:bg-rose-200 text-rose-900 font-semibold px-3 py-2 rounded-xl">停止</button>
+              <span class="text-sm">剩餘：<span id="timerDisplay" class="font-bold">—</span></span>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm mb-1" for="timerSelect">倒數秒數</label>
+              <select id="timerSelect" class="w-full px-3 py-2 rounded-lg bg-black/20 ring-1 ring-white/10 focus:ring-2 focus:ring-amber-400">
+                <option value="30">30 秒</option>
+                <option value="45">45 秒</option>
+                <option value="60" selected>60 秒</option>
+                <option value="90">90 秒</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="statusCard" class="bg-[#2b211b]/70 backdrop-blur-xl rounded-2xl p-5 shadow-glow ring-1 ring-white/5">
+          <h2 class="text-xl font-semibold mb-3">狀態</h2>
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-400/20 text-amber-100">
+              關卡
+              <span id="levelDisplay" class="font-bold">1</span>
+            </span>
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-500/20 text-amber-100">
+              分數
+              <span id="scoreDisplay" class="font-bold">0</span>
+            </span>
+          </div>
+          <p class="text-xs text-white/80 mt-2">自由量測：只對照實際角度。目標角度模式：需同時符合目標與實際角度。</p>
+        </div>
+      </aside>
+    </main>
+
+    <section id="missions" class="mt-10">
+      <div class="bg-[#2b211b]/70 backdrop-blur-xl rounded-2xl p-6 shadow-glow ring-1 ring-white/5">
+        <h2 class="text-2xl font-bold mb-2">挑戰任務</h2>
+        <p class="text-white/90">連續答對多題來提升關卡與分數。你也可以自行調整角度，或我幫你出目標角度。</p>
+      </div>
+    </section>
+
+    <footer class="mt-8 text-center">
+      <div class="bg-[#2b211b]/50 backdrop-blur-xl rounded-xl p-4 ring-1 ring-white/5">
+        <p class="text-white/70 text-sm">設計者 仙姑凱西</p>
+      </div>
+    </footer>
+  </div>
+
+  <div id="celebrate" class="celebrate"></div>
+  
+  <!-- 音效（靜態）提醒：Canva Code 目前不支援實際播放音效，以下為介面提示用的假元素 -->
+  <div id="soundHint" class="sr-only">sound-disabled</div>
+
+  <script>
+    // 小工具
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const toDeg = (rad) => rad * 180 / Math.PI;
+    const toRad = (deg) => deg * Math.PI / 180;
+
+    // 參考元素
+    const svg = document.getElementById('board');
+    const rayA = document.getElementById('rayA');
+    const rayB = document.getElementById('rayB');
+    const angleSector = document.getElementById('angleSector');
+    const handleA = document.getElementById('handleA');
+    const handleB = document.getElementById('handleB');
+    const vertex = { x: 380, y: 245 };
+
+    const protractor = document.getElementById('protractor');
+    const protractorBody = document.getElementById('protractorBody');
+    const protractorBodyTop = document.getElementById('protractorBodyTop');
+    const ticks = document.getElementById('ticks');
+    const ticksTop = document.getElementById('ticksTop');
+    const rotateHandle = document.getElementById('rotateHandle');
+
+    const resetBtn = document.getElementById('resetBtn');
+    const form = document.getElementById('answerForm');
+    const angleInput = document.getElementById('angleInput');
+    const feedback = document.getElementById('feedback');
+    const celebrateLayer = document.getElementById('celebrate');
+    const topToggle = document.getElementById('topToggle');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const levelDisplay = document.getElementById('levelDisplay');
+
+    // 出題與計時元素
+    const newTargetBtn = document.getElementById('newTargetBtn');
+    const targetDisplay = document.getElementById('targetDisplay');
+    const startTimerBtn = document.getElementById('startTimerBtn');
+    const stopTimerBtn = document.getElementById('stopTimerBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerSelect = document.getElementById('timerSelect');
+
+    // 模式切換元素
+    const modeFreeBtn = document.getElementById('modeFreeBtn');
+    const modeTargetBtn = document.getElementById('modeTargetBtn');
+    const clearRecordBtn = document.getElementById('clearRecordBtn');
+
+    // 畫布設定與狀態
+    const view = { w: 760, h: 480, padding: 20 };
+    let state = {
+      A: { x: 560, y: 245 },
+      B: { x: 260, y: 115 },
+      protractor: { x: vertex.x, y: vertex.y, rot: 0, rOuter: 150, rInner: 110 },
+      showTop: false,
+      score: 0,
+      level: 1,
+      freeAwarded: new Set(), // 記錄自由量測已加分的角度（用四捨五入整數）
+      mode: 'free', // 'free' 自由量測 | 'target' 目標角度
+      target: null, // 當前目標角度（整數 0-180）
+      timer: { left: 0, id: null, running: false },
+      dragging: null, // 'A' | 'B' | 'moveProtractor' | 'rotateProtractor'
+      dragOffset: { x: 0, y: 0 },
+    };
+
+    // 畫量角器與刻度
+    function arcPath(cx, cy, r, startDeg, endDeg, sweepCW) {
+      const start = { x: cx + r * Math.cos(toRad(startDeg)), y: cy + r * Math.sin(toRad(startDeg)) };
+      const end = { x: cx + r * Math.cos(toRad(endDeg)), y: cy + r * Math.sin(toRad(endDeg)) };
+      const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+      const sweep = sweepCW ? 1 : 0;
+      return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} ${sweep} ${end.x} ${end.y}`;
+    }
+
+    function drawProtractorBody() {
+      const rO = state.protractor.rOuter;
+      const rI = state.protractor.rInner;
+
+      // 下半圈
+      const outerBottom = arcPath(0, 0, rO, 0, 180, true);
+      const innerBottom = arcPath(0, 0, rI, 180, 0, true);
+      protractorBody.setAttribute('d', `${outerBottom} L ${-rI} 0 ${innerBottom} Z`);
+
+      // 上半圈
+      const outerTop = arcPath(0, 0, rO, 180, 360, true);
+      const innerTop = arcPath(0, 0, rI, 360, 180, true);
+      protractorBodyTop.setAttribute('d', `${outerTop} L ${rI} 0 ${innerTop} Z`);
+
+      // 刻度（每 5°）
+      ticks.innerHTML = '';
+      ticksTop.innerHTML = '';
+
+      for (let deg = 0; deg <= 180; deg += 5) {
+        const rad = toRad(deg);
+        const x1 = Math.cos(rad) * rO;
+        const y1 = Math.sin(rad) * rO;
+        let len = 8;
+        if (deg % 10 === 0) len = 12;
+        if (deg % 30 === 0) len = 16;
+        const x2 = Math.cos(rad) * (rO - len);
+        const y2 = Math.sin(rad) * (rO - len);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke', 'rgba(255,255,255,0.9)');
+        line.setAttribute('stroke-width', deg % 30 === 0 ? '1.8' : (deg % 10 === 0 ? '1.2' : '0.9'));
+        ticks.appendChild(line);
+
+        if (deg % 30 === 0) {
+          const tx = Math.cos(rad) * (rO - 28);
+          const ty = Math.sin(rad) * (rO - 28);
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', tx); text.setAttribute('y', ty + 4);
+          text.setAttribute('fill', 'white'); text.setAttribute('font-size', '12');
+          text.setAttribute('text-anchor', 'middle');
+          text.textContent = String(deg);
+          ticks.appendChild(text);
+        }
+      }
+
+      for (let d = 0; d <= 180; d += 5) {
+        const deg = 180 + d;
+        const label = 180 - d;
+        const rad = toRad(deg);
+        const x1 = Math.cos(rad) * rO;
+        const y1 = Math.sin(rad) * rO;
+        let len = 8;
+        if (d % 10 === 0) len = 12;
+        if (d % 30 === 0) len = 16;
+        const x2 = Math.cos(rad) * (rO - len);
+        const y2 = Math.sin(rad) * (rO - len);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke', 'rgba(255,255,255,0.85)');
+        line.setAttribute('stroke-width', d % 30 === 0 ? '1.6' : (d % 10 === 0 ? '1.1' : '0.9'));
+        ticksTop.appendChild(line);
+
+        if (d % 30 === 0) {
+          const tx = Math.cos(rad) * (rO - 28);
+          const ty = Math.sin(rad) * (rO - 28);
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', tx); text.setAttribute('y', ty + 4);
+          text.setAttribute('fill', 'white'); text.setAttribute('font-size', '12');
+          text.setAttribute('text-anchor', 'middle');
+          text.textContent = String(label);
+          ticksTop.appendChild(text);
+        }
+      }
+    }
+
+    function setProtractorTransform() {
+      protractor.setAttribute('transform', `translate(${state.protractor.x}, ${state.protractor.y}) rotate(${state.protractor.rot})`);
+    }
+
+    // 更新線段、扇形與手把
+    function setLineAndHandles() {
+      const v = vertex;
+      rayA.setAttribute('x1', v.x); rayA.setAttribute('y1', v.y);
+      rayA.setAttribute('x2', state.A.x); rayA.setAttribute('y2', state.A.y);
+      rayB.setAttribute('x1', v.x); rayB.setAttribute('y1', v.y);
+      rayB.setAttribute('x2', state.B.x); rayB.setAttribute('y2', state.B.y);
+      handleA.setAttribute('cx', state.A.x); handleA.setAttribute('cy', state.A.y);
+      handleB.setAttribute('cx', state.B.x); handleB.setAttribute('cy', state.B.y);
+    }
+
+    function angleBetweenRays() {
+      const v1 = { x: state.A.x - vertex.x, y: state.A.y - vertex.y };
+      const v2 = { x: state.B.x - vertex.x, y: state.B.y - vertex.y };
+      const n1 = Math.hypot(v1.x, v1.y);
+      const n2 = Math.hypot(v2.x, v2.y);
+      if (n1 < 1 || n2 < 1) return 0;
+      const dot = (v1.x * v2.x + v1.y * v2.y) / (n1 * n2);
+      const clamped = Math.max(-1, Math.min(1, dot));
+      let deg = toDeg(Math.acos(clamped));
+      if (deg > 180) deg = 360 - deg;
+      return deg;
+    }
+
+    function drawSector() {
+      const r = 120;
+      const a1 = toDeg(Math.atan2(state.A.y - vertex.y, state.A.x - vertex.x));
+      const a2 = toDeg(Math.atan2(state.B.y - vertex.y, state.B.x - vertex.x));
+      const cw = (a2 - a1 + 360) % 360;
+      const useCW = cw <= 180;
+
+      const start = a1;
+      const end = a2;
+      const startPt = {
+        x: vertex.x + r * Math.cos(toRad(start)),
+        y: vertex.y + r * Math.sin(toRad(start))
+      };
+      const d = [
+        `M ${vertex.x} ${vertex.y}`,
+        `L ${startPt.x} ${startPt.y}`,
+        `A ${r} ${r} 0 0 ${useCW ? 1 : 0} ${vertex.x + r * Math.cos(toRad(end))} ${vertex.y + r * Math.sin(toRad(end))}`,
+        'Z'
+      ].join(' ');
+      angleSector.setAttribute('d', d);
+    }
+
+    function updateAll() {
+      setLineAndHandles();
+      drawSector();
+      // 同步顯示目前角度（四捨五入）
+      const live = Math.round(angleBetweenRays());
+      const liveSpan = document.getElementById('liveAngle');
+      if (liveSpan) liveSpan.textContent = String(live);
+    }
+
+    // 出題與計時
+    function randomTarget() {
+      // 只產生 5° 的倍數（0–180）
+      return Math.round(Math.random() * 36) * 5;
+    }
+    function showTarget(target) {
+      targetDisplay.textContent = target == null ? '—' : target;
+      // 目標模式：將目前角度輸入同步為目標角度（顯示用途）
+      const angleInput = document.getElementById('angleInput');
+      if (state.mode === 'target' && angleInput) angleInput.value = target ?? '';
+    }
+    function startTimer(seconds) {
+      clearTimer();
+      state.timer.left = seconds;
+      state.timer.running = true;
+      timerDisplay.textContent = state.timer.left + ' 秒';
+      state.timer.id = setInterval(() => {
+        state.timer.left -= 1;
+        timerDisplay.textContent = Math.max(0, state.timer.left) + ' 秒';
+        if (state.timer.left <= 0) {
+          clearTimer();
+          feedback.textContent = '時間到！';
+          feedback.className = 'text-sm text-rose-200';
+        }
+      }, 1000);
+    }
+    function clearTimer() {
+      if (state.timer.id) clearInterval(state.timer.id);
+      state.timer.id = null;
+      state.timer.running = false;
+    }
+    function stopTimer() { clearTimer(); }
+
+    // 判定：依模式
+    function checkAnswer(userDeg, actualRounded) {
+      // 目標角度模式：允許 ±2° 誤差（以實際角度四捨五入對比目標角度）
+      if (state.mode === 'target' && state.target != null) {
+        const diffTarget = Math.abs(actualRounded - state.target);
+        return diffTarget <= 2;
+      }
+      // 自由量測模式：允許 ±2° 誤差（以實際角度四捨五入為基準）
+      const diff = Math.abs(userDeg - actualRounded);
+      if (diff <= 2) {
+        if (state.freeAwarded.has(actualRounded)) return 'duplicate-free';
+        return true;
+      }
+      return false;
+    }
+
+    // UI：模式切換
+    function setMode(mode) {
+      state.mode = mode;
+      const freeRow = document.getElementById('freeInputRow');
+      const targetHint = document.getElementById('targetHint');
+      const newTargetBtn = document.getElementById('newTargetBtn');
+      if (mode === 'free') {
+        modeFreeBtn.className = 'px-3 py-1.5 rounded-none bg-amber-500/30 text-amber-100 font-medium';
+        modeTargetBtn.className = 'px-3 py-1.5 rounded-none bg-black/20 text-white/80';
+        feedback.textContent = '已切換到自由量測模式。';
+        feedback.className = 'text-sm text-white/80';
+        if (freeRow) freeRow.style.display = '';
+        if (targetHint) targetHint.classList.add('hidden');
+        if (newTargetBtn) newTargetBtn.classList.remove('flash-hint');
+      } else {
+        modeFreeBtn.className = 'px-3 py-1.5 rounded-none bg-black/20 text-white/80';
+        modeTargetBtn.className = 'px-3 py-1.5 rounded-none bg-amber-500/30 text-amber-100 font-medium';
+        feedback.textContent = '已切換到目標角度模式。請按「產生目標角度」。';
+        feedback.className = 'text-sm text-amber-200';
+        if (freeRow) freeRow.style.display = 'none';
+        if (targetHint) targetHint.classList.remove('hidden');
+        if (newTargetBtn) newTargetBtn.classList.add('flash-hint');
+      }
+    }
+
+    // 綁定出題與計時
+    newTargetBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      setMode('target'); // 出題時自動切到目標角度模式
+      state.target = randomTarget();
+      showTarget(state.target);
+      feedback.textContent = '已出題，請拖拉線段讓內角等於目標角度，再按確認！';
+      feedback.className = 'text-sm text-amber-200';
+      // 產生後停止閃爍
+      newTargetBtn.classList.remove('flash-hint');
+    });
+    startTimerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sec = parseInt(timerSelect.value, 10) || 60;
+      startTimer(sec);
+    });
+    stopTimerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      stopTimer();
+      timerDisplay.textContent = '—';
+    });
+
+    // 點擊「目標角度」按鈕也可切換到目標模式，並提示按出題
+    modeTargetBtn.addEventListener('click', () => {
+      setMode('target');
+    });
+
+    // 拖拉互動
+    function getSVGPoint(evt) {
+      const pt = svg.createSVGPoint();
+      if (evt.touches && evt.touches.length) { pt.x = evt.touches[0].clientX; pt.y = evt.touches[0].clientY; }
+      else { pt.x = evt.clientX; pt.y = evt.clientY; }
+      const ctm = svg.getScreenCTM().inverse();
+      return pt.matrixTransform(ctm);
+    }
+    function onPointerDownHandle(which, evt) {
+      evt.preventDefault();
+      svg.setPointerCapture?.(evt.pointerId || 0);
+      state.dragging = which; // 'A' or 'B'
+    }
+    function onPointerDownProtractor(evt) {
+      evt.preventDefault();
+      const p = getSVGPoint(evt);
+      state.dragging = 'moveProtractor';
+      state.dragOffset.x = p.x - state.protractor.x;
+      state.dragOffset.y = p.y - state.protractor.y;
+    }
+    function onPointerDownRotate(evt) {
+      evt.preventDefault();
+      state.dragging = 'rotateProtractor';
+    }
+    function onPointerMove(evt) {
+      if (!state.dragging) return;
+      const p = getSVGPoint(evt);
+
+      if (state.dragging === 'A' || state.dragging === 'B') {
+        const minDist = 40;
+        const v = { x: p.x - vertex.x, y: p.y - vertex.y };
+        const len = Math.hypot(v.x, v.y) || 1;
+        const scale = Math.max(minDist, Math.min(len, Math.min(view.w, view.h))) / len;
+        const nx = vertex.x + v.x * scale;
+        const ny = vertex.y + v.y * scale;
+        const clampedX = clamp(nx, view.padding, view.w - view.padding);
+        const clampedY = clamp(ny, view.padding, view.h - view.padding);
+
+        if (state.dragging === 'A') { state.A.x = clampedX; state.A.y = clampedY; }
+        else { state.B.x = clampedX; state.B.y = clampedY; }
+        updateAll();
+      }
+
+      if (state.dragging === 'moveProtractor') {
+        state.protractor.x = clamp(p.x - state.dragOffset.x, 40, view.w - 40);
+        state.protractor.y = clamp(p.y - state.dragOffset.y, 40, view.h - 40);
+        setProtractorTransform();
+      }
+
+      if (state.dragging === 'rotateProtractor') {
+        const dx = p.x - state.protractor.x;
+        const dy = p.y - state.protractor.y;
+        const angle = toDeg(Math.atan2(dy, dx));
+        state.protractor.rot = angle;
+        setProtractorTransform();
+      }
+    }
+    function onPointerUp() {
+      state.dragging = null;
+    }
+
+    // 表單與提示
+    function showFeedback(ok) {
+      if (ok) {
+        feedback.textContent = '答對了！';
+        feedback.className = 'text-sm text-amber-300';
+      } else {
+        feedback.textContent = '再試試看～';
+        feedback.className = 'text-sm text-yellow-200';
+      }
+    }
+    function celebrate() {
+      for (let i = 0; i < 18; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti';
+        const colors = ['#f59e0b','#d97706','#92400e','#b45309','#eab308','#a16207'];
+        piece.style.background = colors[i % colors.length];
+        piece.style.left = `calc(50% + ${Math.round((Math.random() - 0.5) * 240)}px)`;
+        piece.style.top = `20%`;
+        piece.style.transform = `translateY(-20px) rotate(${Math.random()*180}deg)`;
+        piece.style.animationDelay = `${(i * 20)}ms`;
+        celebrateLayer.appendChild(piece);
+        setTimeout(() => piece.remove(), 1600);
+      }
+      // 顯示 +1 分泡泡在分數徽章旁
+      const statusCard = document.getElementById('statusCard');
+      if (statusCard) {
+        const bubble = document.createElement('div');
+        bubble.className = 'pop-bubble';
+        bubble.textContent = '+1';
+        statusCard.style.position = 'relative';
+        statusCard.appendChild(bubble);
+        setTimeout(() => bubble.remove(), 800);
+      }
+    }
+
+    // 隨機移動並旋轉量角器
+    function randomizeProtractor() {
+      // 隨機位置（避免太靠邊緣）
+      const margin = 80;
+      const newX = margin + Math.random() * (view.w - 2 * margin);
+      const newY = margin + Math.random() * (view.h - 2 * margin);
+      
+      // 隨機旋轉角度（0-360度）
+      const newRot = Math.random() * 360;
+      
+      state.protractor.x = newX;
+      state.protractor.y = newY;
+      state.protractor.rot = newRot;
+      
+      setProtractorTransform();
+    }
+    function updateHUD() {
+      scoreDisplay.textContent = state.score;
+      levelDisplay.textContent = state.level;
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      // 取得使用者輸入（自由量測）或目標角度（目標模式）
+      const actual = angleBetweenRays();
+      const rounded = Math.round(actual);
+      let userDeg;
+      if (state.mode === 'target' && state.target != null) {
+        userDeg = state.target; // 目標模式下不需要輸入
+      } else {
+        const v = angleInput.value.trim();
+        if (v === '') { showFeedback(false); return; }
+        userDeg = Number(v);
+        if (Number.isNaN(userDeg)) { showFeedback(false); return; }
+      }
+
+      const ok = checkAnswer(userDeg, rounded);
+      if (ok === true) {
+        showFeedback(true);
+        // 記錄自由量測已加分角度
+        if (state.mode === 'free') state.freeAwarded.add(rounded);
+        state.score += 1;
+        state.level += 1;
+        updateHUD();
+        celebrate();
+        if (state.timer.running) stopTimer();
+        
+        // 答對後隨機移動並旋轉量角器，增加操作難度
+        setTimeout(() => {
+          randomizeProtractor();
+        }, 800);
+        
+        if (state.mode === 'target' && state.target != null) {
+          setTimeout(() => {
+            state.target = randomTarget();
+            showTarget(state.target);
+            feedback.textContent = '下一題已就緒！按「產生目標角度」換題。';
+            feedback.className = 'text-sm text-amber-200';
+          }, 600);
+        }
+      } else if (ok === 'duplicate-free') {
+        // 自由量測重複角度：顯示答對但不加分，也隨機移動量角器
+        showFeedback(true);
+        feedback.textContent = '答對了（限加分一次）';
+        feedback.className = 'text-sm text-amber-200';
+        setTimeout(() => {
+          randomizeProtractor();
+        }, 800);
+      } else {
+        showFeedback(false);
+      }
+    });
+
+    clearRecordBtn.addEventListener('click', () => {
+      // 清空自由量測已加分角度記錄
+      state.freeAwarded = new Set();
+      feedback.textContent = '已清空自由量測紀錄！';
+      feedback.className = 'text-sm text-amber-200';
+    });
+
+    resetBtn.addEventListener('click', () => {
+      // 重設線段與量角器（不影響分數與關卡）
+      state.A = { x: 560, y: 245 };
+      state.B = { x: 260, y: 115 };
+      state.protractor = { x: vertex.x, y: vertex.y, rot: 0, rOuter: 150, rInner: 110 };
+      state.showTop = false;
+      topToggle.checked = false;
+
+      // 清除目標與計時，並回到自由量測模式
+      state.target = null;
+      showTarget(null);
+      stopTimer();
+      timerDisplay.textContent = '—';
+      setMode('free');
+      // 保留已獲得的自由量測角度記錄，若要清除可在此重置：
+      // state.freeAwarded = new Set();
+
+      setProtractorTransform();
+      drawProtractorBody();
+      protractorBodyTop.style.display = 'none';
+      ticksTop.style.display = 'none';
+
+      updateAll();
+      angleInput.value = '';
+      feedback.textContent = '';
+    });
+
+    // 量角器拖拉區：支援在身體與刻度上拖動
+    protractorBody.addEventListener('pointerdown', onPointerDownProtractor);
+    ticks.addEventListener('pointerdown', onPointerDownProtractor);
+    protractorBodyTop.addEventListener('pointerdown', onPointerDownProtractor);
+    ticksTop.addEventListener('pointerdown', onPointerDownProtractor);
+    rotateHandle.addEventListener('pointerdown', onPointerDownRotate);
+
+    // 手把與移動
+    handleA.addEventListener('pointerdown', (e) => onPointerDownHandle('A', e));
+    handleB.addEventListener('pointerdown', (e) => onPointerDownHandle('B', e));
+    svg.addEventListener('pointermove', onPointerMove);
+    svg.addEventListener('pointerup', onPointerUp);
+    svg.addEventListener('pointerleave', onPointerUp);
+
+    // 觸控
+    svg.addEventListener('touchmove', (e) => onPointerMove(e), { passive: false });
+    svg.addEventListener('touchend', onPointerUp, { passive: false });
+
+    // 切換上半圈
+    topToggle.addEventListener('change', () => {
+      state.showTop = topToggle.checked;
+      protractorBodyTop.style.display = state.showTop ? '' : 'none';
+      ticksTop.style.display = state.showTop ? '' : 'none';
+    });
+
+    // 初始繪製
+    drawProtractorBody();
+    setProtractorTransform();
+    updateAll();
+    updateHUD();
+    setMode('free'); // 預設自由量測
+    // 目標/自由切換
+    modeFreeBtn.addEventListener('click', () => setMode('free'));
+    modeTargetBtn.addEventListener('click', () => setMode('target'));
+    // 讓玩家注意先按「產生目標角度」
+    // （實際切到目標模式時已自動閃爍按鈕）
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'984a7fa184d7a3a0',t:'MTc1ODgwMzA2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
