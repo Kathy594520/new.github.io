@@ -1,85 +1,152 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仙姑凱西 的 教學小工具</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 800px;
-            width: 100%;
-        }
-        .container img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
-        .title {
-            font-size: 2em;
-            color: #1d4e89;
-            margin: 20px 0;
-        }
-        .subtitle {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-        }
-        .buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .buttons a {
-            display: block;
-            padding: 15px;
-            background-color: #000;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        .buttons a:hover {
-            background-color: #444;
-        }
-        .highlight {
-            color: #ffa500;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仙姑凱西 的教學小工具總表</title>
+  <style>
+    body {
+      font-family: 'Microsoft JhengHei', Arial, sans-serif;
+      background: #f7f9fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      text-align: center;
+      background: #1d4e89;
+      color: #fff;
+      padding: 30px 10px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    .nav-links {
+      margin-top: 10px;
+    }
+    .nav-links a {
+      margin: 0 8px;
+      color: #ffe07a;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 1000px;
+      width: 95%;
+      background: #fff;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .section-title {
+      font-size: 1.5em;
+      color: #1d4e89;
+      margin: 20px 0 10px;
+      border-left: 5px solid #1d4e89;
+      padding-left: 10px;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .buttons a {
+      display: block;
+      padding: 15px;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      text-align: center;
+      transition: opacity 0.3s;
+    }
+    .buttons a:hover {
+      opacity: 0.8;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <img src="仙姑凱西 的 教學小工具.jpg" alt="教學小工具">
-        <div class="title">仙姑凱西</div><a href="https://www.facebook.com/profile.php?id=100091503408613">粉絲專頁</a>
-        <div class="subtitle">教學小工具</div>
-        <div class="buttons">
-            <a href="https://kathy594520.github.io/new.github.io/qr_code_generator">QR碼生成器</a>
-            <a href="https://kathy594520.github.io/new.github.io/qr_code_generator_new.html">QR碼生成器 畫素可調整</a>
-            <a href="https://kathy594520.github.io/new.github.io/%E6%89%B9%E9%87%8F%E8%BD%89qr_code">批量 QR 碼生成器</a>
-            <a href="https://kathy594520.github.io/new.github.io/compound_interest_calculator">複利計算器</a>
-            <a href="https://kathy594520.github.io/new.github.io/simple_interest_calculator">單利計算器</a>
-            <a href="https://kathy594520.github.io/savings_tracker.github.io/save/savings_tracker">小錢鼠的存款記錄器</a>
-            <a href="https://kathy594520.github.io/savings_tracker.github.io/NEW/new_tracker.html">大錢鼠的存款記錄器</a>
-            <a href="https://kathy594520.github.io/new.github.io/split_image.html">圖片分割工具</a>
-
-
-       </div>
-        <div class="navigation-buttons">
-             <a href="page2.html" class="navigation-button">下一頁</a>
-        </div>
+  <header>
+    <h1>仙姑凱西 教學小工具總表</h1>
+    <div class="nav-links">
+      <a href="#other">📂其他工具</a>
+      <a href="#qr">📱 QR工具</a>
+      <a href="#money">💰理財工具</a>
+      <a href="#label">📑標籤/書籤</a>
+      <a href="#games">🎮互動遊戲</a>
+      <a href="#chatbots">🤖教案顧問</a>
     </div>
+  </header>
+
+  
+  <div class="container" id="other">
+    <div class="section-title">📂 其他/外部工具</div>
+    <div class="buttons">
+      <a href="https://sites.google.com/view/aiteachtools" style="background:#ff595e;">黃老師超多網頁工具</a>
+      <a href="https://filedn.com/laMtL9jmKf7JrDEQG0A6OPy/html/list/list-out.html" style="background:#ff9f1c;">阿剛老師網頁工具</a>
+      <a href="https://kathy594520.github.io/new.github.io/split_image.html" style="background:#8ac926;">圖片分割工具</a>
+    </div>
+  </div>
+<div class="container" id="qr">
+    <div class="section-title">📱 QR 相關工具</div>
+    <div class="buttons">
+      <a href="https://kathy594520.github.io/new.github.io/qr_code_generator" style="background:#1982c4;">QR碼生成器</a>
+      <a href="https://kathy594520.github.io/new.github.io/qr_code_generator_new.html" style="background:#6a4c93;">QR碼生成器 畫素可調整</a>
+      <a href="https://kathy594520.github.io/new.github.io/%E6%89%B9%E9%87%8F%E8%BD%89qr_code" style="background:#8ac926;">批量 QR 碼生成器</a>
+    </div>
+  </div>
+
+  <div class="container" id="money">
+    <div class="section-title">💰 理財/計算工具</div>
+    <div class="buttons">
+      <a href="https://kathy594520.github.io/new.github.io/compound_interest_calculator" style="background:#ff595e;">複利計算器</a>
+      <a href="https://kathy594520.github.io/new.github.io/simple_interest_calculator" style="background:#ff9f1c;">單利計算器</a>
+      <a href="https://kathy594520.github.io/savings_tracker.github.io/save/savings_tracker" style="background:#8ac926;">小錢鼠存款記錄器</a>
+      <a href="https://kathy594520.github.io/savings_tracker.github.io/NEW/new_tracker.html" style="background:#1982c4;">大錢鼠存款記錄器</a>
+    </div>
+  </div>
+
+  <div class="container" id="label">
+    <div class="section-title">📑 標籤 / 書籤</div>
+    <div class="buttons">
+      <a href="https://kathy594520.github.io/new.github.io/Label%20Generator1" style="background:#8ac926;">Pu Ti 聯絡簿標籤產生器</a>
+      <a href="https://kathy594520.github.io/new.github.io/Label%20Generator" style="background:#1982c4;">聯絡簿標籤產生器可插圖片</a>
+      <a href="https://kathy594520.github.io/new.github.io/Label%20Generator2" style="background:#6a4c93;">聯絡簿標籤產生器可調文字</a>
+      <a href="https://kathy594520.github.io/new.github.io/bookmarkmaker" style="background:#1982c4;">書籤生成工具</a>
+      <a href="https://kathy594520.github.io/new.github.io/StickerCraft" style="background:#6a4c93;">貼紙製作工具</a>
+    </div>
+  </div>
+
+  <div class="container" id="games">
+    <div class="section-title">🎮 小遊戲/練習</div>
+    <div class="buttons">
+      <a href="https://kathy594520.github.io/new.github.io/leopardcatsgame/index" style="background:#ff595e;">小石虎追小青蛙</a>
+      <a href="https://kathy594520.github.io/new.github.io/catgame/index" style="background:#ff9f1c;">小貓咪追毛線球</a>
+      <a href="https://kathy594520.github.io/new.github.io/scoreboard/scoreboard.html" style="background:#8ac926;">小組競賽計分板</a>
+      <a href="https://kathy594520.github.io/new.github.io/Colors" style="background:#8ac926;">配色練習遊戲</a>
+      <a href="https://kathy594520.github.io/new.github.io/maxColors" style="background:#6a4c93;">黏土混色遊戲</a>
+      <a href="https://kathy594520.github.io/new.github.io/v-clock.html" style="background:#ff595e;">鐘面密碼創作挑戰</a>
+      <a href="https://kathy594520.github.io/new.github.io/ClockCode" style="background:#1982c4;">喵時密碼</a>
+      <a href="https://kathy594520.github.io/new.github.io/suno_prompt_game" style="background:#ee8095;">Suno AI 詩歌提示詞產生器</a>
+      <a href="https://kathy594520.github.io/new.github.io/Angle" style="background:#ff9f1c;">互動角度練習</a>
+    </div>
+  </div>
+
+  <div class="container" id="chatbots">
+    <div class="section-title">🤖 教案顧問 / 機器人</div>
+    <div class="buttons">
+      <a href="https://app.edcafe.ai/chatbot/67e410d00d1248cc009d921d" style="background:#ff595e;">繪本提示詞魔法產生器</a>
+      <a href="https://app.edcafe.ai/chatbot/67e3b1c10d1248cc009c05c4" style="background:#ff9f1c;">小學生評語機器人</a>
+      <a href="https://app.edcafe.ai/chatbot/67fe57baeb945205b1329d74" style="background:#8ac926;">性別平等教案顧問</a>
+      <a href="https://app.edcafe.ai/chatbot/67ecea650d1248cc00afc9ec" style="background:#1982c4;">WaHua 畫話老師</a>
+      <a href="https://app.edcafe.ai/chatbot/67f2849aa4bd2ce253fc4d96" style="background:#6a4c93;">性平法法規顧問</a>
+      <a href="https://app.edcafe.ai/chatbot/67eebf05354381c1f39cc48e" style="background:#ff595e;">學生性平小顧問</a>
+    </div>
+  </div>
 </body>
 </html>
