@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>星之石壁：角度占卜</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    /* Global look and feel */
+    :root{
+      --stone-1:#3a2f1f;
+      --stone-2:#4a3d2a;
+      --stone-3:#5a4b35;
+      --gold:#d4af37;
+      --amber:#e6c547;
+      --ember:#ff6b35;
+      --moss:#8b7355;
+    }
+    html, body { height: 100%; overflow-x: hidden; }
+    body{
+      font-family: ui-serif, Georgia, Cambria, "Noto Serif TC", "PingFang TC", "Heiti TC", "Songti TC", serif;
+      background:
+        radial-gradient(200px 120px at 20% 10%, rgba(212,175,55,0.08), transparent 60%),
+        radial-gradient(150px 100px at 80% 20%, rgba(230,197,71,0.06), transparent 50%),
+        radial-gradient(180px 90px at 30% 80%, rgba(255,107,53,0.04), transparent 40%),
+        linear-gradient(180deg, #2a1f15, #3a2f1f 30%, #4a3d2a 70%, #3a2f1f 100%);
+      color:#f9f2df;
+      touch-action: none;
+    }
+    
+    /* Subtle stone texture using SVG noise overlay */
+    .noise-overlay{
+      pointer-events:none;
+      position:absolute; inset:0; z-index:0; opacity:.12;
+      mix-blend-mode:overlay;
+    }
+
+    /* Vignette and torchlight flicker */
+    .vignette{
+      pointer-events:none;
+      position:absolute; inset:0; z-index:1;
+      box-shadow: inset 0 0 200px 100px rgba(0,0,0,0.65);
+    }
+    .torch{
+      pointer-events:none;
+      position:absolute; z-index:2;
+      width:38vmin; height:38vmin; border-radius:50%;
+      background: radial-gradient(closest-side, rgba(212,175,55,0.15), rgba(230,197,71,0.08) 60%, rgba(0,0,0,0) 75%);
+      filter: blur(2px);
+      animation: flicker 2.2s infinite ease-in-out;
+    }
+    .torch.left{ left:2vw; top:3vh; animation-delay: -.6s; }
+    .torch.right{ right:2vw; top:4vh; animation-delay: -.1s; }
+    @keyframes flicker{
+      0%{ opacity:.65; transform:translateY(0) scale(1);}
+      25%{ opacity:.82; transform:translateY(-1px) scale(1.02);}
+      50%{ opacity:.70; transform:translateY(1px) scale(.99);}
+      75%{ opacity:.86; transform:translateY(0) scale(1.01);}
+      100%{ opacity:.68; transform:translateY(-0.5px) scale(1);}
+    }
+
+    /* Hand-drawn feel and glow */
+    .ancient-title{
+      letter-spacing: .08em;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.3), 0 0 18px rgba(212,175,55,0.3);
+    }
+    .glyph{
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease, opacity .3s ease;
+      filter: drop-shadow(0 0 8px rgba(212,175,55,.8)) drop-shadow(0 0 20px rgba(230,197,71,.6));
+      cursor: grab;
+      touch-action: none;
+    }
+    .glyph:active{ cursor: grabbing; }
+    .glyph:hover{ transform: translateY(-3px); filter: drop-shadow(0 0 12px rgba(212,175,55,1)) drop-shadow(0 0 30px rgba(230,197,71,.9)); }
+
+    .glyph.solved{
+      filter: drop-shadow(0 0 15px rgba(255,255,255,1)) drop-shadow(0 0 40px rgba(212,175,55,.9));
+      animation: solvedPop .5s ease;
+      cursor: default;
+    }
+    @keyframes solvedPop{
+      0%{ transform: scale(0.9); }
+      60%{ transform: scale(1.08); }
+      100%{ transform: scale(1); }
+    }
+
+    /* Shake for wrong drop */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-8px); }
+      80% { transform: translateX(8px); }
+    }
+    .shake{ animation: shake .35s ease-in-out; }
+
+    /* Stone tablets */
+    .tablet{
+      position: relative;
+      background:
+        radial-gradient(200px 120px at 40% 0%, rgba(212,175,55,0.1), transparent 60%),
+        linear-gradient(180deg, #5a4b35, #4a3d2a 60%, #3a2f1f 100%);
+      box-shadow:
+        inset 0 2px 8px rgba(212,175,55,0.1),
+        inset 0 -2px 12px rgba(0,0,0,.35),
+        0 10px 20px rgba(0,0,0,.35),
+        0 4px 0 rgba(0,0,0,.4);
+      border: 1px solid rgba(212,175,55,0.15);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .tablet:before{
+      content:"";
+      position:absolute; inset:6px;
+      border-radius: 10px;
+      box-shadow: inset 0 0 30px rgba(0,0,0,.35);
+      pointer-events:none;
+    }
+    .tablet .label{
+      text-shadow: 0 1px 0 rgba(0,0,0,.6), 0 0 8px rgba(212,175,55,.3);
+      letter-spacing:.15em;
+    }
+    .tablet .dropzone{
+      position: absolute; left:10px; right:10px; bottom:8px; top:46px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(212,175,55,.05), rgba(0,0,0,.08));
+      outline: 1px dashed rgba(212,175,55,0.25);
+      outline-offset: -8px;
+    }
+    .tablet.highlight { outline: 2px solid rgba(212,175,55,0.6); outline-offset: 2px; }
+    .dropzone .hint{
+      position:absolute; inset:auto 8px 8px 8px; font-size:.75rem; color:#d9cfb6; opacity:.55;
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed; z-index:60; left:50%; transform: translateX(-50%);
+      bottom: 26vh;
+      background: rgba(0,0,0,.65);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.35);
+      padding: 12px 16px;
+      color: #f9f2df;
+      opacity: 0; pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .toast.show{ opacity: 1; transform: translateX(-50%) translateY(-2px); }
+
+    /* Sparkle on wall */
+    .sparkle{
+      position:absolute; z-index:5; pointer-events:none;
+      font-size: 24px; color: #ffffff; text-shadow: 0 0 12px rgba(255,255,255,.9), 0 0 24px rgba(212,175,55,.8);
+      animation: twinkle 2s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle{
+      0%{ opacity:.6; transform: scale(.95) rotate(-12deg);}
+      100%{ opacity:1; transform: scale(1.15) rotate(15deg);}
+    }
+
+    /* Game UI */
+    .game-ui{
+      background: rgba(0,0,0,.4);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 12px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .timer{
+      font-variant-numeric: tabular-nums;
+      color: #e6c547;
+      text-shadow: 0 0 8px rgba(230,197,71,.8);
+    }
+
+    .score{
+      color: #ffffff;
+      text-shadow: 0 0 8px rgba(255,255,255,.6);
+    }
+
+    /* Level complete animation */
+    .level-complete{
+      position: fixed; inset: 0; z-index: 70;
+      background: rgba(0,0,0,.8);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .3s ease;
+    }
+    .level-complete.show{ opacity: 1; pointer-events: all; }
+    .level-complete .content{
+      background: linear-gradient(135deg, #5a4b35, #3a2f1f);
+      border: 2px solid rgba(212,175,55,.4);
+      border-radius: 20px;
+      padding: 2rem;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,.6);
+      transform: scale(.9);
+      transition: transform .3s ease;
+    }
+    .level-complete.show .content{ transform: scale(1); }
+
+    /* Music upload */
+    .music-upload{
+      position: relative;
+      overflow: hidden;
+    }
+    .music-upload input[type="file"]{
+      position: absolute;
+      left: -9999px;
+    }
+
+    /* Helper small-print */
+    .helper{ color:#e9dfc7; opacity:.7; }
+
+    /* Prevent selection */
+    .no-select { -webkit-user-select:none; user-select:none; }
+  </style>
+</head>
+<body class="min-h-screen relative">
+  <!-- Texture noise overlay using SVG turbulence -->
+  <svg class="noise-overlay" xmlns="http://www.w3.org/2000/svg">
+    <filter id="noiseFilter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.25"/>
+      </feComponentTransfer>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#noiseFilter)"></rect>
+  </svg>
+
+  <!-- Torchlight + vignette -->
+  <div class="vignette"></div>
+  <div class="torch left"></div>
+  <div class="torch right"></div>
+
+  <!-- Hidden SVG defs for hand-drawn wobble -->
+  <svg width="0" height="0" class="absolute">
+    <defs>
+      <filter id="squiggle">
+        <feTurbulence baseFrequency="0.02" numOctaves="2" seed="3" />
+        <feDisplacementMap in="SourceGraphic" scale="1.8" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Header + Game UI -->
+  <header class="relative z-10 px-6 pt-6 md:px-10 flex items-center justify-between">
+    <div>
+      <h1 class="ancient-title text-xl md:text-2xl font-semibold tracking-widest text-amber-200">星之石壁 · 角度占卜</h1>
+      <p class="helper text-sm mt-1">拖曳每個發光星圖到正確的石板上，三分鐘內完成挑戰！</p>
+    </div>
+    <div class="flex gap-4 items-center">
+      <!-- Game Stats -->
+      <div class="game-ui px-4 py-2 flex gap-4 items-center">
+        <div class="timer text-lg font-mono">
+          ⏰ <span id="timeDisplay">3:00</span>
+        </div>
+        <div class="score text-lg">
+          ⭐ <span id="scoreDisplay">0</span>
+        </div>
+      </div>
+      
+      <!-- New Level Button -->
+      <button id="btnNewLevel"
+              class="no-select rounded-lg bg-emerald-700/30 hover:bg-emerald-700/45 text-emerald-100 px-4 py-2 shadow-lg border border-emerald-200/20 transition">
+        新關卡
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Wall Area -->
+  <main id="wall" class="relative z-5 mt-4 px-4 md:px-10 pb-[22vh] min-h-[70vh]">
+    <!-- Glyphs will be injected here -->
+  </main>
+
+  <!-- Stone Tablets (Bottom) -->
+  <section class="fixed left-0 right-0 bottom-0 z-20 px-4 md:px-8 pb-4">
+    <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div class="tablet h-36 md:h-40" data-type="acute">
+        <div class="label text-center pt-2 text-[15px] md:text-base text-amber-200">銳角</div>
+        <div class="dropzone" data-type="acute">
+          <div class="hint text-right">放入小於 90°</div>
+        </div>
+      </div>
+      <div class="tablet h-36 md:h-40" data-type="right">
+        <div class="label text-center pt-2 text-[15px] md:text-base text-amber-200">直角</div>
+        <div class="dropzone" data-type="right">
+          <div class="hint text-right">放入等於 90°</div>
+        </div>
+      </div>
+      <div class="tablet h-36 md:h-40" data-type="obtuse">
+        <div class="label text-center pt-2 text-[15px] md:text-base text-amber-200">鈍角</div>
+        <div class="dropzone" data-type="obtuse">
+          <div class="hint text-right">放入大於 90° 小於 180°</div>
+        </div>
+      </div>
+      <div class="tablet h-36 md:h-40" data-type="straight">
+        <div class="label text-center pt-2 text-[15px] md:text-base text-amber-200">平角</div>
+        <div class="dropzone" data-type="straight">
+          <div class="hint text-right">放入等於 180°</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Level Complete Modal -->
+  <div id="levelComplete" class="level-complete">
+    <div class="content">
+      <h2 class="text-2xl font-bold text-amber-200 mb-4">🎉 關卡完成！</h2>
+      <div class="text-lg mb-4">
+        <div class="score mb-2">本關得分：<span id="levelScore" class="text-xl font-bold">0</span></div>
+        <div class="timer">剩餘時間：<span id="levelTime" class="text-xl font-bold">0:00</span></div>
+      </div>
+      <button id="btnNextLevel" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+        下一關卡
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast for incorrect drop -->
+  <div id="toast" class="toast">
+    <span class="mr-2">🪨</span> 再觀察這個星星角度吧
+  </div>
+
+  <!-- Audio element for background music -->
+  <audio id="bgMusic" loop></audio>
+
+  <script>
+    // Game State
+    let gameState = {
+      score: 0,
+      level: 1,
+      timeLeft: 180, // 3 minutes in seconds
+      isPlaying: false,
+      currentGlyphs: [],
+      solvedCount: 0,
+      timer: null
+    };
+
+    // DOM Elements
+    const wall = document.getElementById('wall');
+    const tablets = Array.from(document.querySelectorAll('.tablet'));
+    const dropzones = Array.from(document.querySelectorAll('.dropzone'));
+    const toast = document.getElementById('toast');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const levelComplete = document.getElementById('levelComplete');
+    const bgMusic = document.getElementById('bgMusic');
+
+    // Helper: classify angle in degrees
+    function classifyAngle(deg){
+      if (deg === 180) return 'straight';
+      if (deg === 90) return 'right';
+      if (deg < 90) return 'acute';
+      if (deg > 90 && deg < 180) return 'obtuse';
+      return 'unknown';
+    }
+
+    // Generate random angles for a level
+    function generateLevelAngles(){
+      const angles = [];
+      const types = ['acute', 'right', 'obtuse', 'straight'];
+      
+      // Ensure at least one of each type
+      angles.push(Math.floor(Math.random() * 80) + 10); // acute: 10-89
+      angles.push(90); // right
+      angles.push(Math.floor(Math.random() * 80) + 100); // obtuse: 100-179
+      angles.push(180); // straight
+      
+      // Add 10-14 more random angles
+      const extraCount = Math.floor(Math.random() * 5) + 10;
+      for(let i = 0; i < extraCount; i++){
+        const type = types[Math.floor(Math.random() * types.length)];
+        let angle;
+        switch(type){
+          case 'acute': angle = Math.floor(Math.random() * 80) + 10; break;
+          case 'right': angle = 90; break;
+          case 'obtuse': angle = Math.floor(Math.random() * 80) + 100; break;
+          case 'straight': angle = 180; break;
+        }
+        angles.push(angle);
+      }
+      
+      return angles.sort(() => Math.random() - 0.5); // shuffle
+    }
+
+    // Create a single glyph (star angle) - LARGER SIZE
+    function createGlyph({id, degrees, x, y, rotation}){
+      const type = classifyAngle(degrees);
+      const el = document.createElement('div');
+      el.className = 'glyph absolute';
+      el.style.left = x+'px';
+      el.style.top = y+'px';
+      el.style.width = '180px'; // Increased from 120px
+      el.style.height = '180px'; // Increased from 120px
+      el.dataset.id = id;
+      el.dataset.degrees = String(degrees);
+      el.dataset.type = type;
+      el.dataset.homeX = x;
+      el.dataset.homeY = y;
+      el.dataset.solved = 'false';
+
+      // Build inner SVG with three star points + rays
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox', '0 0 180 180'); // Increased viewBox
+      svg.setAttribute('width','180'); svg.setAttribute('height','180');
+
+      // Style
+      const group = document.createElementNS(svgNS, 'g');
+      group.setAttribute('transform', `rotate(${rotation||0},90,90)`); // Adjusted center
+      group.setAttribute('filter','url(#squiggle)');
+
+      // Geometry - scaled up
+      const cx = 90, cy = 90, R = 54; // Increased from 60,60,36
+      const theta = degrees * Math.PI/180;
+      const base = (Math.random()*Math.PI*2); // random orientation
+      const a1 = base - theta/2;
+      const a2 = base + theta/2;
+      const pA = { x: cx + R*Math.cos(a1), y: cy + R*Math.sin(a1) };
+      const pB = { x: cx + R*Math.cos(a2), y: cy + R*Math.sin(a2) };
+
+      // Lines from center to endpoints
+      function line(x1,y1,x2,y2,wide=false,dash=false){
+        const ln = document.createElementNS(svgNS, 'line');
+        ln.setAttribute('x1', x1); ln.setAttribute('y1', y1);
+        ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
+        ln.setAttribute('stroke', wide ? 'rgba(255,220,150,0.95)' : 'rgba(255,214,140,0.85)');
+        ln.setAttribute('stroke-width', wide ? '4.2' : '3.2'); // Increased thickness
+        ln.setAttribute('stroke-linecap','round');
+        if(dash) ln.setAttribute('stroke-dasharray', '6 7'); // Adjusted dash
+        return ln;
+      }
+      
+      // Small star marker made from rays - scaled up
+      function star(x,y){
+        const g = document.createElementNS(svgNS,'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        const rays = 8; const L = 9; // Increased from 6
+        for(let i=0;i<rays;i++){
+          const a = (Math.PI*2)*i/rays;
+          const x1 = Math.cos(a)*2, y1 = Math.sin(a)*2; // Increased from 1.5
+          const x2 = Math.cos(a)*L, y2 = Math.sin(a)*L;
+          const r = line(x1,y1,x2,y2,false,false);
+          r.setAttribute('stroke','rgba(255,255,255,.9)');
+          r.setAttribute('stroke-width','2'); // Increased from 1.4
+          g.appendChild(r);
+        }
+        const c = document.createElementNS(svgNS,'circle');
+        c.setAttribute('r','3.2'); // Increased from 2.2
+        c.setAttribute('fill','rgba(255,255,255,.95)');
+        g.appendChild(c);
+        return g;
+      }
+
+      // Draw angle legs (slightly thicker)
+      group.appendChild(line(cx,cy,pA.x,pA.y,true,false));
+      group.appendChild(line(cx,cy,pB.x,pB.y,true,false));
+
+      // Angle arc hint - scaled up
+      const arcR = 24; // Increased from 16
+      const ax1 = cx + arcR*Math.cos(a1);
+      const ay1 = cy + arcR*Math.sin(a1);
+      const ax2 = cx + arcR*Math.cos(a2);
+      const ay2 = cy + arcR*Math.sin(a2);
+      const largeArc = (degrees > 180) ? 1 : 0;
+      const path = document.createElementNS(svgNS,'path');
+      const sweep = 1;
+      path.setAttribute('d', `M ${ax1} ${ay1} A ${arcR} ${arcR} 0 ${largeArc} ${sweep} ${ax2} ${ay2}`);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke','rgba(255,220,150,.5)');
+      path.setAttribute('stroke-width','3'); // Increased from 2
+      path.setAttribute('stroke-dasharray','4 8'); // Adjusted dash
+      path.setAttribute('stroke-linecap','round');
+      group.appendChild(path);
+
+      // Star markers
+      group.appendChild(star(cx,cy));
+      group.appendChild(star(pA.x,pA.y));
+      group.appendChild(star(pB.x,pB.y));
+
+      svg.appendChild(group);
+      el.appendChild(svg);
+
+      // Label degrees (slightly larger)
+      const badge = document.createElement('div');
+      badge.textContent = `${degrees}°`;
+      badge.className = 'absolute -bottom-2 right-2 text-[13px] text-amber-200/80 tracking-widest font-semibold';
+      el.appendChild(badge);
+
+      return el;
+    }
+
+    // Layout positions (randomized in upper wall with better distribution)
+    function randomWallPos(){
+      const wallRect = wall.getBoundingClientRect();
+      const minX = 20, maxX = Math.max(200, wallRect.width - 200); // Adjusted for larger glyphs
+      const minY = 10, maxY = Math.max(150, wallRect.height - 300); // Adjusted for larger glyphs
+      
+      // Create grid-based distribution for better spread
+      const cols = Math.floor((maxX - minX) / 220); // 220px spacing for 180px glyphs
+      const rows = Math.floor((maxY - minY) / 220);
+      
+      if (cols <= 0 || rows <= 0) {
+        // Fallback for small screens
+        return {
+          x: Math.round(minX + Math.random()*(maxX - minX)),
+          y: Math.round(minY + Math.random()*(maxY - minY))
+        };
+      }
+      
+      // Add some randomness to grid positions
+      const cellWidth = (maxX - minX) / cols;
+      const cellHeight = (maxY - minY) / rows;
+      const col = Math.floor(Math.random() * cols);
+      const row = Math.floor(Math.random() * rows);
+      
+      return {
+        x: Math.round(minX + col * cellWidth + Math.random() * (cellWidth - 180)),
+        y: Math.round(minY + row * cellHeight + Math.random() * (cellHeight - 180))
+      };
+    }
+
+    // Timer functions
+    function startTimer(){
+      if(gameState.timer) clearInterval(gameState.timer);
+      gameState.isPlaying = true;
+      gameState.timer = setInterval(()=>{
+        gameState.timeLeft--;
+        updateTimeDisplay();
+        if(gameState.timeLeft <= 0){
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function updateTimeDisplay(){
+      const minutes = Math.floor(gameState.timeLeft / 60);
+      const seconds = gameState.timeLeft % 60;
+      timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateScoreDisplay(){
+      scoreDisplay.textContent = gameState.score;
+    }
+
+
+
+    // Generate new level
+    function generateNewLevel(){
+      // Clear existing glyphs and sparkles
+      wall.innerHTML = '';
+      gameState.currentGlyphs = [];
+      gameState.solvedCount = 0;
+      
+      // Generate random angles
+      const angles = generateLevelAngles();
+      
+      // Create glyphs
+      let id = 1;
+      for(const deg of angles){
+        const pos = randomWallPos();
+        const rot = Math.floor(Math.random()*360);
+        const el = createGlyph({ id, degrees: deg, x: pos.x, y: pos.y, rotation: rot });
+        wall.appendChild(el);
+        gameState.currentGlyphs.push(el);
+        id++;
+      }
+      
+      // Setup drag handlers
+      initDragHandlers();
+      
+      // Start timer if first level
+      if(!gameState.isPlaying){
+        startTimer();
+      }
+    }
+
+    // Drag-and-drop for glyphs
+    function initDragHandlers(){
+      let dragging = null;
+
+      function onPointerDown(e){
+        const target = e.currentTarget;
+        if(target.dataset.solved === 'true') return;
+        
+        // Prevent default to stop page scrolling on touch devices
+        e.preventDefault();
+        
+        // Get coordinates from touch or mouse event
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        dragging = {
+          el: target,
+          startX: clientX,
+          startY: clientY,
+          offsetX: clientX - target.getBoundingClientRect().left,
+          offsetY: clientY - target.getBoundingClientRect().top,
+          homeX: parseInt(target.dataset.homeX, 10),
+          homeY: parseInt(target.dataset.homeY, 10),
+          fromWall: true
+        };
+        target.style.transition = 'none';
+        target.style.zIndex = 30;
+        target.classList.add('active');
+        
+        if (e.setPointerCapture) {
+          target.setPointerCapture(e.pointerId);
+        }
+      }
+
+      function onPointerMove(e){
+        if(!dragging) return;
+        
+        // Prevent default to stop page scrolling
+        e.preventDefault();
+        
+        // Get coordinates from touch or mouse event
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const el = dragging.el;
+        const x = clientX - dragging.offsetX;
+        const y = clientY - dragging.offsetY;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+
+        // highlight tablets when near
+        highlightTabletUnder(el);
+      }
+
+      function onPointerUp(e){
+        if(!dragging) return;
+        const el = dragging.el;
+        // Check drop
+        const targetZone = dropzoneUnder(el);
+        if(targetZone){
+          const want = targetZone.dataset.type;
+          const have = el.dataset.type;
+          if(want === have){
+            onCorrectDrop(el, targetZone);
+          }else{
+            onWrongDrop(el);
+          }
+        }
+
+        // cleanup
+        tablets.forEach(t => t.classList.remove('highlight'));
+        el.style.transition = 'transform .2s ease, filter .2s ease, left .2s ease, top .2s ease';
+        el.style.zIndex = 10;
+        el.classList.remove('active');
+        dragging = null;
+      }
+
+      // Helpers
+      function rectOf(el){ return el.getBoundingClientRect(); }
+
+      function dropzoneUnder(el){
+        const r = rectOf(el);
+        const cx = r.left + r.width/2;
+        const cy = r.top + r.height/2;
+        for(const dz of dropzones){
+          const dr = rectOf(dz);
+          if(cx >= dr.left && cx <= dr.right && cy >= dr.top && cy <= dr.bottom){
+            return dz;
+          }
+        }
+        return null;
+      }
+
+      function highlightTabletUnder(el){
+        const dz = dropzoneUnder(el);
+        tablets.forEach(t => t.classList.remove('highlight'));
+        if(dz){
+          dz.closest('.tablet').classList.add('highlight');
+        }
+      }
+
+      function onCorrectDrop(el, dz){
+        // Score calculation
+        const timeBonus = Math.floor(gameState.timeLeft / 10);
+        const baseScore = 100;
+        const totalScore = baseScore + timeBonus;
+        gameState.score += totalScore;
+        updateScoreDisplay();
+
+        // Brighter glow
+        el.classList.add('solved');
+        el.dataset.solved = 'true';
+        gameState.solvedCount++;
+
+        // Leave a ✨ sparkle where it originally lived on the wall
+        const sparkle = document.createElement('div');
+        sparkle.className = 'sparkle';
+        const homeX = parseInt(el.dataset.homeX, 10) + 90; // Adjusted for larger size
+        const homeY = parseInt(el.dataset.homeY, 10) + 30;
+        sparkle.style.left = homeX + 'px';
+        sparkle.style.top = homeY + 'px';
+        sparkle.textContent = '✨';
+        wall.appendChild(sparkle);
+
+        // Snap into tablet's dropzone and pin
+        const dzRect = dz.getBoundingClientRect();
+        const viewRect = document.body.getBoundingClientRect();
+        const pad = 12;
+        const nx = dzRect.left + pad + Math.random()*(dzRect.width - 180 - pad*2); // Adjusted for larger size
+        const ny = dzRect.top + pad + Math.random()*(dzRect.height - 180 - pad*2);
+
+        el.style.left = (nx - viewRect.left) + 'px';
+        el.style.top = (ny - viewRect.top) + 'px';
+
+        // Disable further dragging
+        el.onpointerdown = null;
+        el.style.cursor = 'default';
+
+        // Check if level complete
+        if(gameState.solvedCount >= gameState.currentGlyphs.length){
+          setTimeout(()=> showLevelComplete(), 800);
+        }
+      }
+
+      function onWrongDrop(el){
+        // Toast
+        toast.classList.add('show');
+        clearTimeout(toast._t);
+        toast._t = setTimeout(()=> toast.classList.remove('show'), 2000);
+
+        // Shake and return to home
+        el.classList.add('shake');
+        const homeX = parseInt(el.dataset.homeX, 10);
+        const homeY = parseInt(el.dataset.homeY, 10);
+        setTimeout(()=>{
+          el.style.left = homeX + 'px';
+          el.style.top = homeY + 'px';
+          el.classList.remove('shake');
+        }, 320);
+      }
+
+      // Attach handlers
+      gameState.currentGlyphs.forEach(el=>{
+        el.onpointerdown = onPointerDown;
+        // Add touch event listeners for better mobile support
+        el.ontouchstart = onPointerDown;
+      });
+      
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      // Add touch event listeners for better mobile support
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp);
+    }
+
+    // Level complete
+    function showLevelComplete(){
+      const timeBonus = gameState.timeLeft * 10;
+      const levelScore = timeBonus;
+      gameState.score += levelScore;
+      
+      document.getElementById('levelScore').textContent = levelScore;
+      document.getElementById('levelTime').textContent = timeDisplay.textContent;
+      updateScoreDisplay();
+      
+      levelComplete.classList.add('show');
+    }
+
+    function endGame(){
+      clearInterval(gameState.timer);
+      gameState.isPlaying = false;
+      alert(`時間到！最終得分：${gameState.score}`);
+      resetGame();
+    }
+
+    function resetGame(){
+      gameState.score = 0;
+      gameState.level = 1;
+      gameState.timeLeft = 180;
+      gameState.isPlaying = false;
+      gameState.solvedCount = 0;
+      updateScoreDisplay();
+      updateTimeDisplay();
+      generateNewLevel();
+    }
+
+    // Event listeners
+    document.getElementById('btnNewLevel').addEventListener('click', generateNewLevel);
+    document.getElementById('btnNextLevel').addEventListener('click', ()=>{
+      levelComplete.classList.remove('show');
+      gameState.level++;
+      generateNewLevel();
+    });
+
+    // Accessibility: prevent accidental dragging and page scrolling during touch
+    document.addEventListener('dragstart', (e)=> e.preventDefault());
+    
+    // Prevent page scrolling when touching game elements
+    document.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.glyph') || e.target.closest('.tablet')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
+    document.addEventListener('touchmove', (e) => {
+      if (dragging || e.target.closest('.glyph') || e.target.closest('.tablet')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // Initialize first level
+    generateNewLevel();
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9853c8a146558421',t:'MTc1ODkwMDQyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
