@@ -81,6 +81,11 @@
       50% { box-shadow: 0 0 0 10px rgba(245,158,11,0); }
       100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
     }
+
+    /* 防止觸控時頁面滾動 */
+    #board {
+      touch-action: none;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-[#3a2a22] via-[#2a1d16] to-[#1b1411] text-white font-sans">
@@ -588,11 +593,13 @@
     }
     function onPointerDownHandle(which, evt) {
       evt.preventDefault();
+      evt.stopPropagation();
       svg.setPointerCapture?.(evt.pointerId || 0);
       state.dragging = which; // 'A' or 'B'
     }
     function onPointerDownProtractor(evt) {
       evt.preventDefault();
+      evt.stopPropagation();
       const p = getSVGPoint(evt);
       state.dragging = 'moveProtractor';
       state.dragOffset.x = p.x - state.protractor.x;
@@ -600,10 +607,13 @@
     }
     function onPointerDownRotate(evt) {
       evt.preventDefault();
+      evt.stopPropagation();
       state.dragging = 'rotateProtractor';
     }
     function onPointerMove(evt) {
       if (!state.dragging) return;
+      evt.preventDefault();
+      evt.stopPropagation();
       const p = getSVGPoint(evt);
 
       if (state.dragging === 'A' || state.dragging === 'B') {
@@ -795,9 +805,36 @@
     svg.addEventListener('pointerup', onPointerUp);
     svg.addEventListener('pointerleave', onPointerUp);
 
-    // 觸控
-    svg.addEventListener('touchmove', (e) => onPointerMove(e), { passive: false });
-    svg.addEventListener('touchend', onPointerUp, { passive: false });
+    // 觸控事件處理 - 防止頁面滾動
+    svg.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+    
+    svg.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onPointerMove(e);
+    }, { passive: false });
+    
+    svg.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onPointerUp(e);
+    }, { passive: false });
+
+    // 防止整個頁面滾動
+    document.body.addEventListener('touchstart', (e) => {
+      if (e.target.closest('#board')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+    
+    document.body.addEventListener('touchmove', (e) => {
+      if (e.target.closest('#board')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     // 切換上半圈
     topToggle.addEventListener('change', () => {
@@ -818,5 +855,5 @@
     // 讓玩家注意先按「產生目標角度」
     // （實際切到目標模式時已自動閃爍按鈕）
   </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'984a7fa184d7a3a0',t:'MTc1ODgwMzA2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9852c17e1289843a',t:'MTc1ODg4OTY1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
