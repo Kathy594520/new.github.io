@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber LED Marquee</title>
+    <!-- 引入 DotGothic16 字體，模擬點陣感 -->
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <!-- 使用 Tailwind CSS 快速排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #111;
+            color: white;
+            overflow-x: hidden; /* 防止全螢幕切換時出現捲軸 */
+        }
+        /* 隱藏字體加載的閃爍 */
+        .font-loader {
+            font-family: 'DotGothic16', sans-serif;
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* 自定義 Range Input 樣式 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            margin-top: -6px;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #4b5563;
+            border-radius: 2px;
+        }
+
+        /* 全螢幕模式專用樣式 */
+        #marqueeContainer.fullscreen-active {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            aspect-ratio: auto !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            z-index: 9999; /* 確保在最上層 */
+            background-color: #000;
+        }
+        
+        /* 全螢幕時隱藏 body 捲軸 */
+        body.no-scroll {
+            overflow: hidden;
+        }
+
+        /* 禁用狀態的樣式 */
+        .disabled-area {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        /* 隱藏 textarea 的捲軸但保留功能 */
+        textarea {
+            resize: none;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-4">
+
+    <!-- 預加載字體 -->
+    <div class="font-loader">Loading Font...</div>
+
+    <!-- 電子鐘顯示 -->
+    <div id="digitalClock" class="fixed top-4 right-4 z-40 bg-gray-900/90 text-green-400 px-4 py-2 rounded-lg border border-green-800 shadow-[0_0_15px_rgba(0,255,0,0.15)] text-lg tracking-widest backdrop-blur-sm select-none hidden md:block" style="font-family: 'DotGothic16', monospace;">
+        Loading...
+    </div>
+    <!-- 手機版電子鐘 (置中顯示在標題上方) -->
+    <div id="digitalClockMobile" class="md:hidden text-green-500/80 text-sm mb-2 tracking-widest" style="font-family: 'DotGothic16', monospace;">
+        --:--:--
+    </div>
+
+    <!-- Canvas 顯示區域 (高度已加大至 2:1) -->
+    <div id="marqueeContainer" class="relative w-full max-w-4xl aspect-[2/1] bg-black rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden border-8 border-gray-800 transition-all duration-300 mb-4">
+        <!-- 這是主要的繪圖畫布 -->
+        <canvas id="ledCanvas" class="w-full h-full block"></canvas>
+        
+        <!-- 裝飾用的外框光澤 -->
+        <div class="absolute inset-0 pointer-events-none border border-white/10 rounded-sm"></div>
+
+        <!-- 離開全螢幕按鈕 (預設隱藏) -->
+        <button id="exitFsBtn" class="hidden absolute top-4 right-4 bg-gray-800/50 hover:bg-gray-700/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm z-50 group">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- 標題 (已更新為英文名稱) -->
+    <h1 class="text-3xl font-bold mb-6 text-blue-400 tracking-widest uppercase" style="font-family: 'DotGothic16', sans-serif;">
+        Cyber LED Marquee
+    </h1>
+
+    <!-- 控制面板 -->
+    <div class="w-full max-w-4xl bg-gray-800 rounded-xl p-6 shadow-2xl border border-gray-700 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- 1. 輸入來源 (使用 Textarea 支援換行) -->
+            <div class="flex flex-col space-y-3">
+                <label class="text-sm text-gray-400 font-semibold">1. 輸入內容</label>
+                
+                <!-- 上傳檔案 -->
+                <input type="file" id="fileInput" accept=".txt" 
+                    class="block w-full text-xs text-gray-400 file:mr-2 file:py-2 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 rounded-lg border border-gray-600 focus:outline-none">
+                
+                <div class="flex items-center text-xs text-gray-500">
+                    <hr class="flex-grow border-gray-600">
+                    <span class="px-2">或 直接輸入 (Shift+Enter 換行)</span>
+                    <hr class="flex-grow border-gray-600">
+                </div>
+
+                <!-- 直接輸入 (改為 Textarea) -->
+                <div class="flex space-x-2 items-start">
+                    <textarea id="textInput" rows="1" placeholder="輸入文字..." 
+                        class="flex-1 bg-gray-900 border border-gray-600 text-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 w-full min-h-[38px] max-h-[80px]"></textarea>
+                    <button id="sendTextBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded text-xs whitespace-nowrap transition-colors h-[38px]">
+                        送出
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. 樣式設定 (顏色、漸層、外框) -->
+            <div class="flex flex-col space-y-3 bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                <label class="text-sm text-gray-400 font-semibold">2. 顏色與樣式</label>
+                
+                <!-- 漸層控制區 -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center justify-between">
+                         <span class="text-xs text-gray-500">文字顏色</span>
+                         <div class="flex items-center space-x-2">
+                             <input type="checkbox" id="gradientCheck" class="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 cursor-pointer">
+                             <label for="gradientCheck" class="text-xs text-gray-400 cursor-pointer select-none">漸層模式</label>
+                         </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <!-- Color 1 -->
+                        <input type="color" id="colorPicker" value="#ff0055" class="h-8 w-10 bg-transparent border-none cursor-pointer rounded">
+                        
+                        <!-- 漸層箭頭與 Color 2 -->
+                        <div id="gradientGroup" class="flex items-center space-x-2 transition-all duration-300 disabled-area">
+                             <span class="text-gray-500 text-sm">➔</span>
+                             <input type="color" id="colorPicker2" value="#00ccff" class="h-8 w-10 bg-transparent border-none cursor-pointer rounded">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 外框控制區 -->
+                <div class="pt-2 border-t border-gray-700/50">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-gray-500">文字外框</span>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="strokeCheck" class="rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500 cursor-pointer">
+                            <label for="strokeCheck" class="text-xs text-gray-400 cursor-pointer select-none">啟用外框</label>
+                        </div>
+                    </div>
+                    <div id="strokeGroup" class="flex items-center space-x-2 transition-opacity duration-200 disabled-area">
+                         <input type="color" id="strokeColorPicker" value="#ffffff" class="h-6 w-8 bg-transparent border-none cursor-pointer rounded">
+                         <span id="strokeColorValue" class="text-[10px] text-gray-500 font-mono">#FFFFFF</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 速度控制 -->
+            <div class="flex flex-col space-y-2">
+                <div class="flex justify-between">
+                    <label class="text-sm text-gray-400 font-semibold">3. 移動速度</label>
+                    <span id="speedDisplay" class="text-xs text-blue-400">5</span>
+                </div>
+                <input type="range" id="speedRange" min="1" max="20" value="5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- 4. 播放模式 & 全螢幕 -->
+            <div class="flex flex-col space-y-3 justify-center">
+                <!-- 模式選項：隨機 & 閃爍 -->
+                <div class="flex items-center justify-between px-1">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="randomCheck" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 cursor-pointer">
+                        <label for="randomCheck" class="text-sm font-medium text-gray-300 cursor-pointer select-none">隨機播放</label>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="blinkCheck" class="w-4 h-4 text-red-500 bg-gray-700 border-gray-600 rounded focus:ring-red-500 cursor-pointer">
+                        <label for="blinkCheck" class="text-sm font-medium text-gray-300 cursor-pointer select-none">閃爍效果</label>
+                    </div>
+                </div>
+
+                <!-- 新增：靜態輪播模式 -->
+                <div class="flex items-center space-x-2 px-1 bg-gray-700/30 p-1 rounded">
+                    <input type="checkbox" id="staticCheck" class="w-4 h-4 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 cursor-pointer">
+                    <label for="staticCheck" class="text-sm font-medium text-yellow-400 cursor-pointer select-none">靜態輪播 (不滑動)</label>
+                </div>
+                
+                <div class="flex space-x-2 pt-1">
+                    <button id="nextBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-2 rounded-lg transition duration-200 flex items-center justify-center text-sm">
+                        ⏭ 下一句
+                    </button>
+                    <button id="fsBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-2 rounded-lg transition duration-200 flex items-center justify-center text-sm">
+                        ⛶ 全螢幕
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 text-gray-500 text-xs">
+        提示：全螢幕模式下，文字會隨機出現在上、中、下三個區域 (除非開啟靜態輪播)。
+    </div>
+
+    <script>
+        // --- 變數設定 ---
+        const canvas = document.getElementById('ledCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); 
+        
+        // UI 參考
+        const container = document.getElementById('marqueeContainer');
+        const fileInput = document.getElementById('fileInput');
+        const textInput = document.getElementById('textInput');
+        const sendTextBtn = document.getElementById('sendTextBtn');
+        
+        // 顏色與樣式 UI
+        const colorPicker = document.getElementById('colorPicker');
+        const colorPicker2 = document.getElementById('colorPicker2');
+        const gradientCheck = document.getElementById('gradientCheck');
+        const gradientGroup = document.getElementById('gradientGroup');
+        
+        const strokeCheck = document.getElementById('strokeCheck');
+        const strokeColorPicker = document.getElementById('strokeColorPicker');
+        const strokeColorValue = document.getElementById('strokeColorValue');
+        const strokeGroup = document.getElementById('strokeGroup');
+
+        // 其他 UI
+        const speedRange = document.getElementById('speedRange');
+        const speedDisplay = document.getElementById('speedDisplay');
+        const randomCheck = document.getElementById('randomCheck');
+        const blinkCheck = document.getElementById('blinkCheck');
+        const staticCheck = document.getElementById('staticCheck'); // 新增
+        const nextBtn = document.getElementById('nextBtn');
+        const fsBtn = document.getElementById('fsBtn');
+        const exitFsBtn = document.getElementById('exitFsBtn');
+
+        // 狀態
+        let messages = ["歡迎使用\nCyber LED Marquee", "Shift+Enter\n可輸入兩行", "開啟靜態輪播\n文字自動縮放"];
+        let currentMsgIndex = 0;
+        let textX = 0;
+        let textY = 0; // 在兩行模式下，這是第一行的基準 Y 或中心點
+        let fontSize = 0;
+        let currentSlot = -1; 
+        let animationId;
+        let lastSwitchTime = 0; // 用於靜態輪播計時
+        
+        // 設定參數
+        let config = {
+            color: '#ff0055',
+            color2: '#00ccff',
+            isGradient: false,
+            hasStroke: false,
+            strokeColor: '#ffffff',
+            speed: 5,
+            isRandom: false,
+            isBlinking: false, 
+            isStatic: false, // 新增：靜態模式
+            gridSize: 4,
+            fontFamily: '"DotGothic16", "LiHei Pro", "Microsoft JhengHei", sans-serif'
+        };
+
+        // --- 初始化 ---
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            requestAnimationFrame(animate);
+            resetMessage();
+            updateClock(); // 初始化時鐘
+            setInterval(updateClock, 1000); // 啟動時鐘計時器
+        }
+
+        // --- 核心邏輯：Canvas 繪製 ---
+        function animate() {
+            // 1. 清除畫布
+            ctx.fillStyle = '#000000';
+            ctx.globalAlpha = 1.0;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 取得當前文字並拆分行
+            const currentText = messages[currentMsgIndex];
+            const lines = currentText.split('\n');
+            const isMultiLine = lines.length > 1;
+
+            // 2. 計算字體與位置 (每一幀都算，為了支援靜態縮放)
+            let drawFontSize = fontSize;
+            let startY = textY;
+            let startX = textX;
+
+            // --- 靜態輪播邏輯 ---
+            if (config.isStatic) {
+                // A. 計時切換 (只有多則訊息時才切換)
+                const now = Date.now();
+                if (messages.length > 1 && now - lastSwitchTime > 3000) { // 每 3 秒切換
+                    nextMessage();
+                    lastSwitchTime = now;
+                    return; // 跳過這一幀，下一幀重繪
+                }
+
+                // B. 自動縮放字體 (Auto Scale)
+                // 預設最大字體 (單行 80% 高度，雙行每行 40% 高度)
+                const maxFontSize = isMultiLine ? (canvas.height / 2) * 0.85 : canvas.height * 0.85;
+                ctx.font = `${maxFontSize}px ${config.fontFamily}`;
+                
+                // 找出最長的一行
+                let maxLineWidth = 0;
+                lines.forEach(line => {
+                    const w = ctx.measureText(line).width;
+                    if (w > maxLineWidth) maxLineWidth = w;
+                });
+
+                // 計算縮放比例 (留 20px 邊距)
+                const maxWidthAvailable = canvas.width - 40;
+                let scaleFactor = 1;
+                if (maxLineWidth > maxWidthAvailable) {
+                    scaleFactor = maxWidthAvailable / maxLineWidth;
+                }
+                
+                drawFontSize = maxFontSize * scaleFactor;
+                
+                // C. 強制置中
+                startX = canvas.width / 2;
+                ctx.textAlign = 'center';
+            } else {
+                // 跑馬燈模式
+                ctx.textAlign = 'left';
+                // 如果是兩行，字體稍微縮小一點以防太擠
+                if (isMultiLine && !container.classList.contains('fullscreen-active')) {
+                     drawFontSize = fontSize * 0.8;
+                } else {
+                     drawFontSize = fontSize;
+                }
+            }
+
+            // 設定 Canvas 字體
+            ctx.font = `${drawFontSize}px ${config.fontFamily}`;
+            ctx.textBaseline = 'middle';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = drawFontSize * 0.08;
+
+            // 3. 處理顏色
+            let fillStyle;
+            if (config.isGradient) {
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, config.color);
+                gradient.addColorStop(1, config.color2);
+                fillStyle = gradient;
+            } else {
+                fillStyle = config.color;
+            }
+            
+            // 移除光暈
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+
+            // 4. 閃爍
+            if (config.isBlinking) {
+                const now = Date.now();
+                if (Math.floor(now / 160) % 2 !== 0) {
+                    ctx.globalAlpha = 0.1;
+                } else {
+                    ctx.globalAlpha = 1.0;
+                }
+            } else {
+                ctx.globalAlpha = 1.0;
+            }
+
+            // 5. 繪製文字 (支援多行)
+            lines.forEach((line, index) => {
+                // 計算每一行的 Y 座標
+                let lineY;
+                if (isMultiLine) {
+                    // 兩行模式：計算上下位置
+                    const lineHeight = drawFontSize * 1.2; // 行高
+                    const totalHeight = lineHeight * lines.length;
+                    const centerY = canvas.height / 2;
+                    // 第一行位置 = 中心點 - 總高度的一半 + 第一行的一半高度
+                    lineY = (centerY - totalHeight / 2) + (lineHeight * index) + (lineHeight / 2);
+                } else {
+                    // 單行模式：直接置中 (或跟隨 textY)
+                    lineY = config.isStatic ? canvas.height / 2 : textY;
+                }
+
+                // 繪製外框
+                if (config.hasStroke) {
+                    ctx.strokeStyle = config.strokeColor;
+                    ctx.strokeText(line, startX, lineY);
+                }
+
+                // 繪製填充
+                ctx.fillStyle = fillStyle;
+                ctx.fillText(line, startX, lineY);
+            });
+
+            ctx.globalAlpha = 1.0;
+            drawGridOverlay();
+
+            // 6. 跑馬燈移動邏輯 (靜態模式不移動)
+            if (!config.isStatic) {
+                textX -= config.speed;
+
+                // 檢查是否跑完 (以最長的那行為準)
+                let maxLineWidth = 0;
+                lines.forEach(line => {
+                    const w = ctx.measureText(line).width;
+                    if (w > maxLineWidth) maxLineWidth = w;
+                });
+
+                if (textX < -maxLineWidth - 100) {
+                    nextMessage();
+                }
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function drawGridOverlay() {
+            ctx.shadowBlur = 0; 
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)'; 
+            
+            if (!window.gridPattern) {
+                createGridPattern();
+            }
+            
+            ctx.fillStyle = window.gridPattern;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function createGridPattern() {
+            const pCanvas = document.createElement('canvas');
+            pCanvas.width = config.gridSize;
+            pCanvas.height = config.gridSize;
+            const pCtx = pCanvas.getContext('2d');
+            
+            pCtx.fillStyle = 'rgba(0,0,0,0.9)';
+            pCtx.fillRect(0, 0, config.gridSize, config.gridSize);
+            
+            pCtx.globalCompositeOperation = 'destination-out';
+            pCtx.beginPath();
+            pCtx.rect(0, 0, config.gridSize - 1, config.gridSize - 1); 
+            pCtx.fill();
+
+            window.gridPattern = ctx.createPattern(pCanvas, 'repeat');
+        }
+
+        // --- 訊息控制邏輯 ---
+        function nextMessage() {
+            if (messages.length === 0) return;
+
+            if (config.isRandom) {
+                let newIndex = Math.floor(Math.random() * messages.length);
+                if (messages.length > 1 && newIndex === currentMsgIndex) {
+                    newIndex = (newIndex + 1) % messages.length;
+                }
+                currentMsgIndex = newIndex;
+            } else {
+                currentMsgIndex = (currentMsgIndex + 1) % messages.length;
+            }
+            resetMessage();
+        }
+
+        function resetMessage() {
+            // 重置位置
+            textX = canvas.width; 
+            lastSwitchTime = Date.now(); // 重置靜態計時器
+            
+            const isFullscreen = container.classList.contains('fullscreen-active');
+            
+            // 全螢幕隨機換行邏輯 (僅在非靜態模式生效)
+            if (isFullscreen && !config.isStatic) {
+                currentSlot = Math.floor(Math.random() * 3);
+            } else {
+                currentSlot = -1; 
+            }
+            
+            calculateTextMetrics();
+        }
+        
+        function calculateTextMetrics() {
+            const isFullscreen = container.classList.contains('fullscreen-active');
+            
+            // 重新計算基礎字體大小
+            // 因為高度變大了 (2:1)，我們調整字體比例讓它看起來協調
+            if (isFullscreen) {
+                const slotHeight = canvas.height / 3;
+                if (currentSlot === -1) currentSlot = 1;
+                fontSize = slotHeight * 0.8; 
+                textY = (currentSlot * slotHeight) + (slotHeight / 2);
+            } else {
+                // 正常視窗模式
+                fontSize = canvas.height * 0.6; // 基礎字體設為高度的 60%
+                textY = canvas.height / 2;
+            }
+        }
+
+        // --- 工具函式 ---
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            window.gridPattern = null;
+            calculateTextMetrics();
+        }
+
+        function toggleFullscreen() {
+            container.classList.toggle('fullscreen-active');
+            document.body.classList.toggle('no-scroll');
+            
+            const isActive = container.classList.contains('fullscreen-active');
+            
+            if (isActive) {
+                exitFsBtn.classList.remove('hidden');
+                if (!document.fullscreenElement) {
+                     container.requestFullscreen().catch(err => console.log(err));
+                }
+            } else {
+                exitFsBtn.classList.add('hidden');
+                currentSlot = -1; 
+                 if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            }
+
+            setTimeout(resizeCanvas, 50);
+        }
+
+        // --- 電子鐘邏輯 ---
+        function updateClock() {
+            const now = new Date();
+            // 格式化日期 YYYY-MM-DD
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            
+            // 格式化時間 HH:mm:ss
+            const h = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            
+            const timeString = `${y}-${m}-${d} ${h}:${min}:${s}`;
+            
+            const clockEl = document.getElementById('digitalClock');
+            if (clockEl) clockEl.innerText = timeString;
+            
+            const clockElMobile = document.getElementById('digitalClockMobile');
+            if (clockElMobile) clockElMobile.innerText = timeString;
+        }
+
+        // --- 事件監聽 ---
+
+        colorPicker.addEventListener('input', (e) => config.color = e.target.value);
+        colorPicker2.addEventListener('input', (e) => config.color2 = e.target.value);
+        gradientCheck.addEventListener('change', (e) => {
+            config.isGradient = e.target.checked;
+            gradientGroup.classList.toggle('disabled-area', !config.isGradient);
+        });
+
+        strokeCheck.addEventListener('change', (e) => {
+            config.hasStroke = e.target.checked;
+            strokeGroup.classList.toggle('disabled-area', !config.hasStroke);
+        });
+        strokeColorPicker.addEventListener('input', (e) => {
+            config.strokeColor = e.target.value;
+            strokeColorValue.textContent = config.strokeColor.toUpperCase();
+        });
+
+        speedRange.addEventListener('input', (e) => {
+            config.speed = parseInt(e.target.value);
+            speedDisplay.textContent = config.speed;
+        });
+        randomCheck.addEventListener('change', (e) => config.isRandom = e.target.checked);
+        blinkCheck.addEventListener('change', (e) => config.isBlinking = e.target.checked);
+        
+        // 靜態模式切換
+        staticCheck.addEventListener('change', (e) => {
+            config.isStatic = e.target.checked;
+            // 切換模式時立即重置目前訊息位置
+            resetMessage();
+        });
+
+        nextBtn.addEventListener('click', nextMessage);
+        fsBtn.addEventListener('click', toggleFullscreen);
+        exitFsBtn.addEventListener('click', toggleFullscreen);
+
+        // 檔案輸入邏輯修正：遇到逗號視為換行
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                // 先拆分文字檔的每一行，然後將每一行內的逗號轉換為換行符號
+                const lines = text.split(/\r?\n/)
+                    .filter(line => line.trim() !== '')
+                    .map(line => line.replace(/,/g, '\n')); // 逗號轉換行
+                
+                if (lines.length > 0) {
+                    messages = lines;
+                    currentMsgIndex = 0;
+                    resetMessage();
+                    textInput.value = "";
+                    alert(`成功載入 ${lines.length} 則訊息！`);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // 文字輸入邏輯修正：使用 Textarea
+        function handleTextInput() {
+            const text = textInput.value.trim();
+            if (text) {
+                messages = [text]; // Textarea 的值本身就包含 \n
+                currentMsgIndex = 0;
+                resetMessage();
+                fileInput.value = "";
+            }
+        }
+        sendTextBtn.addEventListener('click', handleTextInput);
+        
+        // Textarea 鍵盤監聽：Shift+Enter 換行，Enter 送出
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // 防止產生新的一行
+                handleTextInput();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && container.classList.contains('fullscreen-active')) {
+                 toggleFullscreen(); 
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && container.classList.contains('fullscreen-active')) {
+                toggleFullscreen();
+            }
+        });
+
+        document.fonts.ready.then(() => {
+             init();
+        });
+
+    </script>
+</body>
+</html>
