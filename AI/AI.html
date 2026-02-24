@@ -111,11 +111,35 @@
       transition: opacity 0.3s, transform 0.2s;
       font-size: 0.95em;
       line-height: 1.3;
-      min-height: 50px; /* 確保按鈕高度一致 */
+      min-height: 50px;
     }
     .buttons a:hover {
       opacity: 0.8;
       transform: translateY(-2px);
+    }
+    
+    /* 返回最上方按鈕樣式 */
+    #backToTopBtn {
+      display: none; /* 預設隱藏 */
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      z-index: 99;
+      font-size: 24px;
+      border: none;
+      outline: none;
+      background-color: #ff9f1c; /* 搭配你網站的橘黃色系 */
+      color: white;
+      cursor: pointer;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    #backToTopBtn:hover {
+      background-color: #ff595e; /* hover 時變紅色 */
+      transform: scale(1.1);
     }
   </style>
 </head>
@@ -155,178 +179,4 @@
       <a href="https://gemini.google.com/gem/1uVkhV3jq2vVGvE0cn5GAcD5PTGR-b6az?usp=sharing" style="background:#8ac926;">識字能力王實作</a>
       <a href="https://gemini.google.com/gem/1CuWGV2-PHFMnzwi5PmNcir7cEzpUGQlk?usp=sharing" style="background:#8ac926;">識字主題樂園設計師</a>
       <a href="https://gemini.google.com/gem/1splZ8KZHNOQ4Vjx7c8N2k5BIhaQL6IY6?usp=sharing" style="background:#4cc2ff;">漢字核心擴散架構師</a>
-      <a href="https://gemini.google.com/gem/1DiVfnoNkBKsxV7yFfYonrlKVlTZwZ3vI?usp=sharing" style="background:#6a4c93;">圖解成語學習卡</a>
-    </div>
-
-    <div class="subsection-title">✍️ 國語文：句型與寫作引導</div>
-    <div class="buttons">
-      <a href="https://gemini.google.com/share/102a74552c62" style="background:#1982c4;">作文引導單產生器</a>
-      <a href="https://gemini.google.com/gem/1OwygxLK5lgrJnhZsy8QmQmhm3jHGdJEF?usp=sharing" style="background:#ee8095;">作文引導學習圖文創作王</a>
-      <a href="https://kathy594520.github.io/edu.github.io/worksheet.html" style="background:#ff595e;">語法冒險學習單生成器</a>
-      <a href="https://gemini.google.com/gem/1JviJ0scproftfgBWOm_ATIZsqtq4XeeM?usp=sharing" style="background:#8ac926;">複雜句型教學製作機</a>
-      <a href="https://gemini.google.com/gem/1EW5TwDX93uSbSke2r_Hth6tc3xEMSaqZ?usp=sharing" style="background:#6a4c93;">句型王的副本</a>
-    </div>
-
-    <div class="subsection-title">🏫 班級經營與行政工具</div>
-    <div class="buttons">
-      <a href="https://kathy594520.github.io/edu.github.io/myviewpro.html" style="background:#d84bac;">直播軟體未來視</a>
-      <a href="https://gemini.google.com/gem/15XK7M_bprCtDjGLoZbw70G9M4w6YgVs8?usp=sharing" style="background:#f17d35;">親師溝通聯絡專家</a>
-      <a href="https://gemini.google.com/gem/1THee7aEqA0X0-T4QdprWzmUUSe3G4ahG?usp=sharing" style="background:#ff595e;">觀課紀錄小助手</a>
-      <a href="https://kathy594520.github.io/edu.github.io/WordCloud.html" style="background:#8ac926;">班級互動文字雲</a>
-      <a href="https://kathy594520.github.io/edu.github.io/StudentTeamBuilder.html" style="background:#ff9f1c;">異質性分組工作表</a>
-      <a href="https://kathy594520.github.io/edu.github.io/routines.html" style="background:#7986CB;">班級自治小黑板</a>
-      <a href="https://kathy594520.github.io/new.github.io/LED" style="background:#8ac926;">螢幕跑馬燈</a>
-      <a href="https://kathy594520.github.io/edu.github.io/easyline.html" style="background:#4cc2ff;">聯絡簿&line通知</a>
-    </div>
-
-    <div class="subsection-title">📐 學科工具：數學、英文、自然</div>
-    <div class="buttons">
-      <a href="https://kathy594520.github.io/edu.github.io/math_shapes.html" style="background:#ff595e;">幾何圖形備課工具</a>
-      <a href="https://gemini.google.com/gem/15u-9V8kbIYZcB_uB2CcabRM9FfNa4W8X?usp=sharing" style="background:#1982c4;">英文句型大師-台南在地版</a>
-      <a href="https://gemini.google.com/gem/1v9r8J3GbXVVmdhCfsO-x5shqDnDARduj?usp=sharing" style="background:#ff9f1c;">自然科解題漫畫圖解小幫手</a>
-      <a href="https://gemini.google.com/gem/1NEEc89mRIIEkKllHknvEymjvyjNsHLS4?usp=sharing" style="background:#1982c4;">全能學生營養顧問</a>       
-    </div>
-
-    <div class="subsection-title">🎨 美編設計與圖片工具</div>
-    <div class="buttons">
-      <a href="https://gemini.google.com/share/e3aaf96170a4" style="background:#4cc2ff;">EasyViz資訊圖表架構師</a>
-      <a href="https://kathy594520.github.io/edu.github.io/SlideEditor.html" style="background:#d84bac">PDF智能修復與轉簡報工具</a>
-      <a href="https://kathy594520.github.io/edu.github.io/writing-grid.html" style="background:#8ac926;">硬筆字練習生成器</a>
-      <a href="https://gemini.google.com/gem/1DQPwK2-c65wX6PkVLFVIoafYBPTlF-2M?usp=sharing" style="background:#ff9f1c;">氣象視覺架構師</a>
-      <a href="https://gemini.google.com/gem/1c3ur3NZjhtxVQmTeWWTGLYNvfK286Dog?usp=sharing" style="background:#6a4c93;">校園防護步驟漫畫助手</a>
-      <a href="https://gemini.google.com/gem/1UzfZaA7rejE1ZuxtzExJV9noelP-IZGI?usp=sharing" style="background:#ff595e;">寒假學習單封面設計師</a>
-      <a href="https://gemini.google.com/gem/1sGSOzzkgsbmwEQ6EOqSQ46HudSOsUhB_?usp=sharing" style="background:#1982c4;">奇幻小說封面設計總監</a>
-      <a href="https://gemini.google.com/gem/10k5UVG1KGpkXeULKtH6E9_-lttawYV_B?usp=sharing" style="background:#ff595e;">分割與對比圖卡設計師</a>     
-      <a href="https://gemini.google.com/gem/f5a3b4f3594c?usp=sharing" style="background:#7986CB;">沉默的視覺轉譯師</a>
-      <a href="https://kathy594520.github.io/new.github.io/split_image.html" style="background:#ff9f1c;">圖片分割工具</a>
-      <a href="https://kathy594520.github.io/new.github.io/Fujifilm.html" style="background:#d84bac">富士底片風格實驗室</a>
-    </div>
-  </div>
-
-  <div class="container" id="chatbots">
-    <div class="section-title">🤖 教案 / 命題顧問</div>
-    <div class="buttons">
-      <a href="https://gemini.google.com/gem/1qcUU0opfKapJJhj-RoJLoJi_6SlXz-Bl?usp=sharing" style="background:#e2a9f1;">閱讀測驗命題GEM</a>
-      <a href="https://notebooklm.google.com/notebook/206ba7cf-adbe-46ab-834c-f19474d58c5b" style="background:#7986CB;">國小國語PIRLS閱讀測驗</a>
-      <a href="https://notebooklm.google.com/notebook/5d67be15-8b3d-40c9-ab43-6a5b190b253e" style="background:#d84bac">108課綱全科學力測驗評量</a>
-      <a href="https://notebooklm.google.com/notebook/72c91064-c8b6-409f-ba68-cb02a221f233" style="background:#ff595e;">國中小數學命題審題NBLM</a> 
-      <a href="https://notebooklm.google.com/notebook/25b75652-a0fc-4877-be85-d8c3461ef155" style="background:#8ac926;">國中小國語命題審題NBLM</a> 
-      <a href="https://notebooklm.google.com/notebook/9f1103ad-2a64-42b4-b7e5-19285bd03da7" style="background:#1982c4;">國中小英文科命題審題NBLM</a>     
-      <a href="https://notebooklm.google.com/notebook/17573027-d7eb-45c2-afe1-d1b5f8011cd3" style="background:#ff9f1c;">國小學生評語助手</a>
-      <a href="https://app.edcafe.ai/chatbot/67e410d00d1248cc009d921d" style="background:#ee8095;">繪本提示詞魔法產生器</a> 
-      <a href="https://app.edcafe.ai/chatbot/67fe57baeb945205b1329d74" style="background:#6a4c93;">性別平等教案顧問</a>      
-      <a href="https://app.edcafe.ai/chatbot/67f2849aa4bd2ce253fc4d96" style="background:#8ac926;">性平法法規顧問</a>
-      <a href="https://app.edcafe.ai/chatbot/67eebf05354381c1f39cc48e" style="background:#ff595e;">學生性平小顧問</a>
-      <a href="https://app.edcafe.ai/chatbots/68e73014c2448519c4788d44" style="background:#e2a9f1;">詩意小精靈</a>
-      <a href="https://app.edcafe.ai/chatbots/6905c003e92ccbc97db508a8" style="background:#1982c4;">課文朗讀評審老師</a>
-      <a href="https://app.edcafe.ai/chatbots/691f16934eb65671a1d5f5ad" style="background:#ff9f1c;">文學寫作小助手</a>      
-      <a href="https://gemini.google.com/gem/1q5XrO93E2e7Lx-25mYVe4SHA1Ip5V0Dq?usp=sharing" style="background:#1F1F1F;">小三國語學測命題機器人</a>
-      <a href="https://gemini.google.com/gem/1tGcF0ee3KeUieI_7gTm0-tNEra4xyuAC?usp=sharing" style="background:#1F1F1F;">小四國語學測命題機器人</a>
-      <a href="https://gemini.google.com/gem/176Tzrc-Vr1rGAcDs9iN7S0lbub-TEKnK?usp=sharing" style="background:#1F1F1F;">小五國語學測命題機器人</a>
-      <a href="https://gemini.google.com/gem/1uXg52Hgw9lujIRaAEaXysGK87bp-9KlC?usp=sharing" style="background:#1F1F1F;">小六國語學測命題機器人</a>
-      <a href="https://gemini.google.com/gem/1QeehwW6vdtenf8aayTM9DUcx89ujwj4T?usp=sharing" style="background:#cb6ce6;">小四數學學測命題機器人</a>
-      <a href="https://notebooklm.google.com/notebook/782c3570-7674-4b4f-b24f-c6aaeb604ea1" style="background:#ff9f1c;">國小數學素養命題設計師</a>
-      <a href="https://notebooklm.google.com/notebook/b2ed7713-92dd-4e84-96fa-001fa40c39ca" style="background:#8ac926;">國小數學差異化教材生成器</a>
-    </div>
-  </div>
-
-  <div class="container" id="games">
-    <div class="section-title">🎮 小遊戲/練習</div>
-    <div class="buttons">
-      <a href="https://kathy594520.github.io/new.github.io/leopardcatsgame/index" style="background:#ff595e;">小石虎追小青蛙</a>
-      <a href="https://kathy594520.github.io/new.github.io/catgame/index" style="background:#ff9f1c;">小貓咪追毛線球</a>
-      <a href="https://kathy594520.github.io/new.github.io/scoreboard/scoreboard.html" style="background:#8ac926;">小組競賽計分板</a>
-      <a href="https://kathy594520.github.io/new.github.io/Colors" style="background:#1982c4;">配色練習遊戲</a>
-      <a href="https://kathy594520.github.io/new.github.io/maxColors" style="background:#6a4c93;">黏土混色遊戲</a>
-      <a href="https://kathy594520.github.io/new.github.io/v-clock.html" style="background:#ff595e;">鐘面密碼創作挑戰</a>
-      <a href="https://kathy594520.github.io/new.github.io/ClockCode" style="background:#1982c4;">喵時密碼</a>
-      <a href="https://kathy594520.github.io/new.github.io/suno_prompt_game" style="background:#ee8095;">Suno AI 詩歌提示詞產生器</a>
-      <a href="https://kathy594520.github.io/new.github.io/Angle" style="background:#ff9f1c;">互動角度練習</a>
-      <a href="https://kathy594520.github.io/new.github.io/Cave" style="background:#8ac926;">星之石壁角的分類遊戲</a>
-      <a href="https://kathy594520.github.io/new.github.io/life_path_calculator.html" style="background:#ee8095;">星夜占卜</a>
-      <a href="https://kathy594520.github.io/edu.github.io/strategy.html" style="background:#6a4c93;">扇形複合圖形解題策略</a>
-      <a href="https://kathy594520.github.io/edu.github.io/game.html" style="background:#6a4c93;">等積圖形偵探</a>
-      <a href="https://kathy594520.github.io/edu.github.io/Chiikawa.html" style="background:#ee8095;">吉伊卡哇心情儀表板</a>
-      <a href="https://kathy594520.github.io/edu.github.io/cat" style="background:#7986CB;">靜謐貓語Whisper Cat</a>
-      <a href="https://kathy594520.github.io/edu.github.io/dog/dog" style="background:#ff9f1c;">汪汪星球療癒絮語</a>
-      <a href="https://kathy594520.github.io/edu.github.io/fish" style="background:#8ac926;">依序撈魚教育遊戲</a>
-    </div>
-  </div>
-
-  <div class="container" id="label">
-    <div class="section-title">📑 標籤 / 書籤 /卡片</div>
-    <div class="buttons">
-      <a href="https://kathy594520.github.io/new.github.io/Label%20Generator1" style="background:#8ac926;">Pu Ti 聯絡簿標籤產生器</a>
-      <a href="https://kathy594520.github.io/new.github.io/Label%20Generator" style="background:#1982c4;">聯絡簿標籤產生器可插圖片</a>
-      <a href="https://kathy594520.github.io/new.github.io/Label%20Generator2" style="background:#6a4c93;">聯絡簿標籤產生器可調文字</a>
-      <a href="https://kathy594520.github.io/new.github.io/bookmarkmaker" style="background:#1982c4;">書籤生成工具</a>
-      <a href="https://kathy594520.github.io/new.github.io/StickerCraft" style="background:#6a4c93;">貼紙製作工具</a>
-      <a href="https://kathy594520.github.io/edu.github.io/travel01" style="background:#ee8095;">旅遊手帳本</a>
-      <a href="https://bejewelled-donut-fe2f72.netlify.app/" style="background:#8ac926;">聖誕傳情小站</a>
-    </div>
-  </div>
-
-  <div class="container" id="qr">
-    <div class="section-title">📱 QR 相關工具</div>
-    <div class="buttons">
-      <a href="https://kathy594520.github.io/new.github.io/qr_code_generator" style="background:#1982c4;">QR碼生成器</a>
-      <a href="https://kathy594520.github.io/new.github.io/qr_code_generator_new.html" style="background:#6a4c93;">QR碼生成器 畫素可調整</a>
-      <a href="https://kathy594520.github.io/new.github.io/%E6%89%B9%E9%87%8F%E8%BD%89qr_code" style="background:#8ac926;">批量 QR 碼生成器</a>
-    </div>
-  </div>
-
-  <div class="container" id="money">
-    <div class="section-title">💰 理財/計算工具</div>
-    <div class="buttons">
-      <a href="https://kathy594520.github.io/new.github.io/compound_interest_calculator" style="background:#ff595e;">複利計算器</a>
-      <a href="https://kathy594520.github.io/new.github.io/simple_interest_calculator" style="background:#ff9f1c;">單利計算器</a>
-      <a href="https://kathy594520.github.io/savings_tracker.github.io/save/savings_tracker" style="background:#8ac926;">小錢鼠存款記錄器</a>
-      <a href="https://kathy594520.github.io/savings_tracker.github.io/NEW/new_tracker.html" style="background:#1982c4;">大錢鼠存款記錄器</a>
-    </div>
-  </div>
-
-  <script>
-    document.getElementById('searchInput').addEventListener('input', function() {
-      // 取得輸入文字並轉為小寫
-      const filter = this.value.toLowerCase();
-      // 取得所有的分類容器
-      const containers = document.querySelectorAll('.container');
-
-      containers.forEach(container => {
-        let containerHasVisibleLinks = false;
-        // 取得該容器內所有的按鈕群組
-        const buttonGroups = container.querySelectorAll('.buttons');
-
-        buttonGroups.forEach(group => {
-          let groupHasVisibleLinks = false;
-          const links = group.querySelectorAll('a');
-
-          // 判斷每個連結文字是否包含關鍵字
-          links.forEach(link => {
-            if (link.textContent.toLowerCase().includes(filter)) {
-              link.style.display = ''; // 顯示符合的按鈕
-              groupHasVisibleLinks = true;
-              containerHasVisibleLinks = true;
-            } else {
-              link.style.display = 'none'; // 隱藏不符合的按鈕
-            }
-          });
-
-          // 如果群組上面有子標題 (.subsection-title)，且群組內沒有符合的項目，就連子標題一起隱藏
-          const prevElement = group.previousElementSibling;
-          if (prevElement && prevElement.classList.contains('subsection-title')) {
-            prevElement.style.display = groupHasVisibleLinks ? 'block' : 'none';
-          }
-
-          // 隱藏/顯示按鈕群組的外框，避免排版跑版
-          group.style.display = groupHasVisibleLinks ? 'grid' : 'none';
-        });
-
-        // 如果整個大分類都沒有符合的項目，就隱藏整個大容器 (.container)
-        container.style.display = containerHasVisibleLinks ? 'block' : 'none';
-      });
-    });
-  </script>
-</body>
-</html>
-
+      <a href="https://gemini.google.com/gem/1DiVfnoNkBKsxV7yFfYonrlKVlTZwZ3vI?usp=sharing" style="background:#6a4
