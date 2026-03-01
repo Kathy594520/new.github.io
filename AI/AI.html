@@ -24,6 +24,36 @@
       margin: 0;
       font-size: 2em;
     }
+    
+    /* 新增：最上方醒目按鈕專用樣式 */
+    .highlight-btn-container {
+      margin: 20px 0 10px;
+      text-align: center;
+    }
+    .highlight-btn {
+      display: inline-block;
+      background: linear-gradient(45deg, #ff007f, #ff8c00);
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.2em;
+      font-weight: bold;
+      padding: 12px 30px;
+      border-radius: 50px;
+      box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: pulse 2s infinite;
+    }
+    .highlight-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(255, 140, 0, 0.6);
+      opacity: 0.95;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 140, 0, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0); }
+    }
+
     .nav-links {
       margin-top: 15px;
       display: flex;
@@ -130,6 +160,11 @@
 <body>
   <header>
     <h1>仙姑凱西 教學小工具總表</h1>
+    
+    <div class="highlight-btn-container">
+      <a href="https://gemini.google.com/share/c86fb6de9fa0" target="_blank" class="highlight-btn">✨ SlideCraft AI 簡報架構師 ✨</a>
+    </div>
+
     <div class="nav-links">
       <a href="#other">📂其他工具</a>
       <a href="#chatbots">🤖教案顧問</a>
@@ -351,4 +386,3 @@
   </script>
 </body>
 </html>
-
